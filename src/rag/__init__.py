@@ -1,20 +1,22 @@
 """
 Retrieval Augmented Generation (RAG) package.
 
-Components:
-- Document loading
-- Text chunking
-- Embeddings generation
-- Vector search
-- Context retrieval
+Contains:
+- document loading
+- chunking
+- embeddings
+- vector search
+- retrieval pipeline
 """
 
-from .loader import DocumentLoader
 from .chunker import DocumentChunker
 from .embeddings import EmbeddingGenerator
+from .search import VectorSearch
+from .pipeline import RAGPipeline
 
 __all__ = [
-    "DocumentLoader",
     "DocumentChunker",
     "EmbeddingGenerator",
+    "VectorSearch",
+    "RAGPipeline",
 ]
