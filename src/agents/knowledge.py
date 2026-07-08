@@ -1,33 +1,31 @@
 """
 Knowledge Agent.
 
-Responsible for answering user questions using
-enterprise knowledge sources.
-
-Future enhancements:
-- Azure AI Search retrieval
-- Vector search
-- Document chunk ranking
-- Citation generation
+Uses enterprise retrieval and generates grounded answers.
 """
 
 from typing import Optional
 
 from src.agents.base import BaseAgent
 from src.config import get_logger
+from src.rag import RAGPipeline
 
 logger = get_logger(__name__)
 
 
 class KnowledgeAgent(BaseAgent):
     """
-    Knowledge retrieval and answer generation agent.
+    Enterprise knowledge retrieval agent.
 
-    Current capability:
-    - Generate answers using model knowledge
+    Flow:
 
-    Future capability:
-    - Generate grounded answers using RAG context
+    User question
+        |
+    Azure AI Search
+        |
+    Retrieved context
+        |
+    LLM response
     """
 
     def __init__(self):
@@ -37,28 +35,46 @@ class KnowledgeAgent(BaseAgent):
             prompt_file="knowledge.txt",
         )
 
+        self.rag = RAGPipeline()
+
     def answer(
         self,
         user_input: str,
         context: Optional[str] = None,
     ) -> str:
-        """
-        Generate an answer using available knowledge.
 
-        Args:
-            user_input:
-                User question.
+        logger.info("KnowledgeAgent processing request")
 
-            context:
-                Retrieved enterprise documents.
+        if not context:
 
-        Returns:
-            Generated answer.
-        """
+            documents = self.rag.retrieve(user_input)
 
-        logger.info("KnowledgeAgent answering request")
+            context = self.rag.build_context(documents)
 
-        return super().run(
+        return self.run(
             user_input=user_input,
             context=context,
         )
+
+    def run(
+        self,
+        user_input: str,
+        context: Optional[str] = None,
+    ) -> str:
+        """
+        Execute knowledge workflow.
+        """
+
+        prompt = f"""
+    Context:
+    {context or "No enterprise context available."}
+
+
+    Question:
+    {user_input}
+
+
+    Answer using only the context above.
+    """
+
+        return super().run(user_input=prompt)

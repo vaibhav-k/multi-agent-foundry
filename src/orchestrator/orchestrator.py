@@ -77,7 +77,6 @@ class Orchestrator:
 
         knowledge_output = self.knowledge_agent.answer(
             user_input=user_input,
-            context=planner_output,
         )
 
         logger.info("Knowledge agent completed")
