@@ -1,22 +1,30 @@
 """
-Agent orchestration layer.
+Multi-agent orchestration layer.
 
-Responsible for routing user requests
-through the appropriate agents.
+Coordinates:
+- Planner Agent
+- Knowledge Agent
+- Safety Agent
 """
 
-from typing import Any
+from src.agents import (
+    KnowledgeAgent,
+    PlannerAgent,
+    SafetyAgent,
+)
 
 from src.config import get_logger
+
+from src.models import AgentWorkflowResult
 
 logger = get_logger(__name__)
 
 
 class Orchestrator:
     """
-    Coordinates multi-agent execution.
+    Coordinates the complete agent workflow.
 
-    Current workflow:
+    Workflow:
 
         User Request
               |
@@ -24,7 +32,6 @@ class Orchestrator:
         Planner Agent
               |
               v
-        Future:
         Knowledge Agent
               |
               v
@@ -36,52 +43,62 @@ class Orchestrator:
 
     def __init__(
         self,
-        planner: Any,
-        knowledge_agent: Any = None,
-        safety_agent: Any = None,
+        planner: PlannerAgent,
+        knowledge_agent: KnowledgeAgent,
+        safety_agent: SafetyAgent,
     ):
-        """
-        Initialize orchestrator.
-
-        Args:
-            planner:
-                Planner agent responsible for deciding workflow.
-
-            knowledge_agent:
-                Agent responsible for RAG retrieval.
-
-            safety_agent:
-                Agent responsible for response validation.
-        """
-
         self.planner = planner
         self.knowledge_agent = knowledge_agent
         self.safety_agent = safety_agent
 
-        logger.info("Orchestrator initialized")
+        logger.info("Multi-agent orchestrator initialized")
 
     def run(
         self,
         user_input: str,
-    ):
+    ) -> AgentWorkflowResult:
         """
         Execute agent workflow.
-
-        Phase 1:
-            Route request to planner.
-
-        Future phases:
-            1. Planner determines intent
-            2. Knowledge agent retrieves context
-            3. Safety agent validates response
-            4. Final answer returned
         """
 
-        logger.info(
-            "Processing request: %s",
-            user_input,
+        logger.info("Starting workflow")
+
+        # -------------------------------------------------
+        # Step 1: Planning
+        # -------------------------------------------------
+
+        planner_output = self.planner.plan(user_input)
+
+        logger.info("Planner completed")
+
+        # -------------------------------------------------
+        # Step 2: Knowledge Retrieval / Answer Generation
+        # -------------------------------------------------
+
+        knowledge_output = self.knowledge_agent.answer(
+            user_input=user_input,
+            context=planner_output,
         )
 
-        planner_response = self.planner.run(user_input)
+        logger.info("Knowledge agent completed")
 
-        return planner_response
+        # -------------------------------------------------
+        # Step 3: Safety Review
+        # -------------------------------------------------
+
+        safety_output = self.safety_agent.review(knowledge_output)
+
+        logger.info("Safety review completed")
+
+        # -------------------------------------------------
+        # Step 4: Final response
+        # -------------------------------------------------
+
+        return AgentWorkflowResult(
+            user_query=user_input,
+            planner_output=planner_output,
+            knowledge_output=knowledge_output,
+            safety_output=safety_output,
+            final_response=knowledge_output,
+            success=True,
+        )

@@ -149,3 +149,39 @@ class EvaluationResult(BaseModel):
     retrieval_score: float
 
     answer_score: float
+
+
+# ---------------------------------------------------------------------
+# Multi-Agent Workflow Models
+# ---------------------------------------------------------------------
+
+
+class AgentWorkflowResult(BaseModel):
+    """
+    Complete execution result from the multi-agent workflow.
+
+    Stores intermediate outputs for:
+    - Planner
+    - Knowledge
+    - Safety
+    - Final response
+
+    Useful for:
+    - Debugging
+    - Evaluation
+    - Observability
+    """
+
+    user_query: str
+
+    planner_output: Optional[str] = None
+
+    knowledge_output: Optional[str] = None
+
+    safety_output: Optional[str] = None
+
+    final_response: Optional[str] = None
+
+    success: bool = True
+
+    metadata: dict = Field(default_factory=dict)
