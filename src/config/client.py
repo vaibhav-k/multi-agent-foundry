@@ -1,28 +1,20 @@
 """
 Client factory.
 
-Creates reusable Azure AI Foundry clients used throughout the application.
+Creates reusable Azure AI Foundry and Azure OpenAI clients.
 """
 
 from functools import lru_cache
 
 from azure.ai.projects import AIProjectClient
 from azure.identity import DefaultAzureCredential
+from openai import AzureOpenAI
 
 from src.config.settings import get_settings
 
 
 @lru_cache
-def get_project_client() -> AIProjectClient:
-    """
-    Returns the Azure AI Foundry project client.
-
-    The project client provides access to:
-    - Model deployments
-    - Azure OpenAI models
-    - Azure AI Search connections
-    - Other Foundry resources
-    """
+def get_project_client():
 
     settings = get_settings()
 
@@ -35,12 +27,12 @@ def get_project_client() -> AIProjectClient:
 @lru_cache
 def get_openai_client():
     """
-    Returns the OpenAI-compatible client from Azure AI Foundry.
+    Azure AI Foundry OpenAI client.
 
     Used for:
-    - Chat completions
     - Responses API
-    - Embeddings
+    - Agent workflows
+    - gpt-5.4-mini
     """
 
     project_client = get_project_client()
@@ -48,45 +40,19 @@ def get_openai_client():
     return project_client.get_openai_client()
 
 
-# ---------------------------------------------------------------
-# Future service clients
-# ---------------------------------------------------------------
-
-
 @lru_cache
-def get_search_client():
+def get_embedding_client():
     """
-    Returns Azure AI Search client.
+    Azure OpenAI client.
 
-    This will be enabled after the RAG pipeline is implemented.
+    Used for:
+    - text-embedding-3-small
     """
 
     settings = get_settings()
 
-    from azure.search.documents import SearchClient
-    from azure.core.credentials import AzureKeyCredential
-
-    return SearchClient(
-        endpoint=settings.azure_search_endpoint,
-        index_name=settings.azure_search_index,
-        credential=AzureKeyCredential(settings.azure_search_key),
-    )
-
-
-@lru_cache
-def get_content_safety_client():
-    """
-    Returns Azure AI Content Safety client.
-
-    This will be used by the Safety Agent.
-    """
-
-    settings = get_settings()
-
-    from azure.ai.contentsafety import ContentSafetyClient
-    from azure.core.credentials import AzureKeyCredential
-
-    return ContentSafetyClient(
-        endpoint=settings.azure_content_safety_endpoint,
-        credential=AzureKeyCredential(settings.azure_content_safety_key),
+    return AzureOpenAI(
+        azure_endpoint=settings.azure_ai_model_endpoint,
+        api_key=settings.azure_ai_model_key,
+        api_version="2024-05-01-preview",
     )

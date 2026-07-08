@@ -26,6 +26,20 @@ class Settings(BaseSettings):
     )
 
     # ==========================================================
+    # Azure OpenAI Project
+    # ==========================================================
+
+    azure_ai_model_endpoint: str = Field(
+        ...,
+        alias="AZURE_AI_MODEL_ENDPOINT",
+    )
+
+    azure_ai_model_key: str = Field(
+        ...,
+        alias="AZURE_AI_MODEL_KEY",
+    )
+
+    # ==========================================================
     # Azure AI Foundry Project
     # ==========================================================
 

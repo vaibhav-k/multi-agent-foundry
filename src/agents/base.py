@@ -60,7 +60,6 @@ class BaseAgent:
 
         return prompt_path.read_text(encoding="utf-8")
 
-
     def run(
         self,
         user_input: str,
