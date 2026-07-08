@@ -1,10 +1,62 @@
-.env
-.env.*
-!.env.example
+# Python
 
-src/__pycache__/
-*.pyc
+**pycache**/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual Environment
+
+.venv/
+venv/
+
+# Environment
+
+.env
+
+# VS Code
+
+.vscode/
+
+# JetBrains
+
+.idea/
+
+# Logs
+
+*.log
+
+# Pytest
 
 .pytest_cache/
 
-.venv/
+# Coverage
+
+.coverage
+htmlcov/
+
+# Jupyter
+
+.ipynb_checkpoints/
+
+# macOS
+
+.DS_Store
+
+# Windows
+
+Thumbs.db
+
+# Distribution
+
+build/
+dist/
+*.egg-info/
+
+# Azure
+
+.azure/
+
+# Misc
+
+*.sqlite

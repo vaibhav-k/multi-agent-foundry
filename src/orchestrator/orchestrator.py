@@ -1,61 +1,87 @@
 """
-Application orchestrator.
+Agent orchestration layer.
 
-Coordinates interactions between the user and AI agents.
-
-For Day 1, the orchestrator simply delegates all requests to the
-PlannerAgent.
-
-Future iterations will introduce routing between multiple agents,
-including:
-
-- PlannerAgent
-- KnowledgeAgent
-- ActionAgent
+Responsible for routing user requests
+through the appropriate agents.
 """
 
-from __future__ import annotations
+from typing import Any
 
-from src.agents import PlannerAgent
-from src.models import AgentResponse
+from src.config import get_logger
+
+logger = get_logger(__name__)
 
 
 class Orchestrator:
     """
-    Coordinates AI agents.
+    Coordinates multi-agent execution.
 
-    Attributes:
-        planner:
-            Planner agent responsible for processing requests.
+    Current workflow:
+
+        User Request
+              |
+              v
+        Planner Agent
+              |
+              v
+        Future:
+        Knowledge Agent
+              |
+              v
+        Safety Agent
+              |
+              v
+        Final Response
     """
 
     def __init__(
         self,
-        planner: PlannerAgent,
-    ) -> None:
+        planner: Any,
+        knowledge_agent: Any = None,
+        safety_agent: Any = None,
+    ):
         """
-        Initialize the orchestrator.
+        Initialize orchestrator.
 
         Args:
             planner:
-                Planner agent instance.
+                Planner agent responsible for deciding workflow.
+
+            knowledge_agent:
+                Agent responsible for RAG retrieval.
+
+            safety_agent:
+                Agent responsible for response validation.
         """
 
         self.planner = planner
+        self.knowledge_agent = knowledge_agent
+        self.safety_agent = safety_agent
+
+        logger.info("Orchestrator initialized")
 
     def run(
         self,
         user_input: str,
-    ) -> AgentResponse:
+    ):
         """
-        Execute the workflow.
+        Execute agent workflow.
 
-        Args:
-            user_input:
-                User request.
+        Phase 1:
+            Route request to planner.
 
-        Returns:
-            Response produced by the planner agent.
+        Future phases:
+            1. Planner determines intent
+            2. Knowledge agent retrieves context
+            3. Safety agent validates response
+            4. Final answer returned
         """
 
-        return self.planner.run(user_input)
+        logger.info(
+            "Processing request: %s",
+            user_input,
+        )
+
+        planner_response = self.planner.run(user_input)
+
+        return planner_response

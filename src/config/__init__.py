@@ -1,21 +1,34 @@
 """
 Configuration package.
 
-Exports application settings and client helpers.
+Provides centralized access to application settings,
+logging, and service clients.
 """
 
-from .client import get_client
+from .client import (
+    get_content_safety_client,
+    get_openai_client,
+    get_project_client,
+    get_search_client,
+)
+
+from .logging import (
+    configure_logging,
+    get_logger,
+)
+
 from .settings import (
-    CHAT_DEPLOYMENT,
-    EMBEDDING_DEPLOYMENT,
-    FOUNDRY_API_KEY,
-    FOUNDRY_ENDPOINT,
+    Settings,
+    get_settings,
 )
 
 __all__ = [
-    "CHAT_DEPLOYMENT",
-    "EMBEDDING_DEPLOYMENT",
-    "FOUNDRY_API_KEY",
-    "FOUNDRY_ENDPOINT",
-    "get_client",
+    "Settings",
+    "get_settings",
+    "get_project_client",
+    "get_openai_client",
+    "get_search_client",
+    "get_content_safety_client",
+    "configure_logging",
+    "get_logger",
 ]

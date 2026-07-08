@@ -1,60 +1,97 @@
 """
-Application configuration.
+Application settings.
 
-Loads Microsoft Foundry configuration from environment variables.
-
-Environment Variables
----------------------
-FOUNDRY_ENDPOINT
-    Azure AI Foundry endpoint.
-
-FOUNDRY_API_KEY
-    API key used to authenticate requests.
-
-CHAT_DEPLOYMENT
-    Chat model deployment name.
-
-EMBEDDING_DEPLOYMENT
-    Embedding model deployment name.
+Loads configuration from environment variables and the .env file.
 """
 
-from __future__ import annotations
+from functools import lru_cache
 
-import os
-
-from dotenv import load_dotenv
-
-load_dotenv()
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-def _get_required_env(name: str) -> str:
+class Settings(BaseSettings):
+    """Application configuration."""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+    # Application
+    log_level: str = Field(
+        default="INFO",
+        alias="LOG_LEVEL",
+    )
+
+    # ==========================================================
+    # Azure AI Foundry Project
+    # ==========================================================
+
+    azure_ai_project_endpoint: str = Field(
+        ...,
+        alias="AZURE_AI_PROJECT_ENDPOINT",
+    )
+
+    # ==========================================================
+    # Model Deployments
+    # ==========================================================
+
+    # Deployment name from:
+    # Azure AI Foundry
+    # -> Project
+    # -> Models + Endpoints
+    # -> Deployments
+
+    azure_openai_chat_deployment: str = Field(
+        ...,
+        alias="AZURE_OPENAI_CHAT_DEPLOYMENT",
+    )
+
+    azure_openai_embedding_deployment: str = Field(
+        ...,
+        alias="AZURE_OPENAI_EMBEDDING_DEPLOYMENT",
+    )
+
+    # ==========================================================
+    # Azure AI Search
+    # ==========================================================
+
+    azure_search_endpoint: str = Field(
+        ...,
+        alias="AZURE_SEARCH_ENDPOINT",
+    )
+
+    azure_search_key: str = Field(
+        ...,
+        alias="AZURE_SEARCH_KEY",
+    )
+
+    azure_search_index: str = Field(
+        default="enterprise-documents",
+        alias="AZURE_SEARCH_INDEX",
+    )
+
+    # ==========================================================
+    # Azure AI Content Safety
+    # ==========================================================
+
+    azure_content_safety_endpoint: str = Field(
+        ...,
+        alias="AZURE_CONTENT_SAFETY_ENDPOINT",
+    )
+
+    azure_content_safety_key: str = Field(
+        ...,
+        alias="AZURE_CONTENT_SAFETY_KEY",
+    )
+
+
+@lru_cache
+def get_settings() -> Settings:
     """
-    Retrieve a required environment variable.
-
-    Args:
-        name:
-            Name of the environment variable.
-
-    Returns:
-        Environment variable value.
-
-    Raises:
-        ValueError:
-            If the environment variable is not defined.
+    Return cached application settings.
     """
 
-    value = os.getenv(name)
-
-    if not value:
-        raise ValueError(f"Environment variable '{name}' is not configured.")
-
-    return value
-
-
-FOUNDRY_ENDPOINT: str = _get_required_env("FOUNDRY_ENDPOINT")
-
-FOUNDRY_API_KEY: str = _get_required_env("FOUNDRY_API_KEY")
-
-CHAT_DEPLOYMENT: str = _get_required_env("CHAT_DEPLOYMENT")
-
-EMBEDDING_DEPLOYMENT: str = _get_required_env("EMBEDDING_DEPLOYMENT")
+    return Settings()

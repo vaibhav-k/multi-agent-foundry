@@ -1,332 +1,168 @@
-# Microsoft Foundry Multi-Agent System
+# Enterprise IT Knowledge Assistant using Microsoft Foundry
 
-A reference implementation for building an enterprise multi-agent AI application using **Microsoft AI Foundry**, Azure-hosted models, RAG capabilities, AI safety controls, and evaluation workflows.
+An enterprise-grade **Multi-Agent AI Assistant** built with **Microsoft Foundry**, **Azure OpenAI**, and **Azure AI Search**.
 
-The goal of this project is to establish a scalable foundation for:
-
-- Multi-agent orchestration
-- Retrieval-Augmented Generation (RAG)
-- Tool-enabled AI agents
-- Prompt governance
-- AI safety and guardrails
-- RAG evaluation
-- Monitoring and observability
+The assistant helps employees retrieve accurate IT knowledge from enterprise documentation using **Retrieval-Augmented Generation (RAG)** while ensuring responses remain safe, grounded, and compliant with organizational policies.
 
 ---
 
-# Project Status
+## Features
 
-## Current Phase: Day 1 Foundation
-
-Implemented:
-
-- ✅ Microsoft AI Foundry model connectivity
-- ✅ Environment-based configuration
-- ✅ Azure AI Foundry client setup
-- ✅ Base agent framework
-- ✅ Planner Agent
-- ✅ Agent orchestration layer
-- ✅ Chat connectivity validation
-- ✅ Embedding connectivity validation
-
-Planned phases:
-
-- Knowledge Agent
-- Action Agent
-- RAG pipeline
-- Vector search integration
-- MCP/tool governance
-- Content Safety integration
-- RAG evaluation framework
-- Application Insights monitoring
-- CI/CD deployment
+* Multi-Agent Architecture
+* Planner Agent for request orchestration
+* Knowledge Agent with RAG
+* Safety Agent using Azure AI Content Safety
+* Azure AI Search vector retrieval
+* Modular architecture
+* Evaluation framework
+* Production-ready configuration
+* Easy deployment to Azure
 
 ---
 
-# Solution Overview
+## Architecture
 
-The system follows a multi-agent architecture where specialized agents collaborate to solve user requests.
-
-Initial architecture:
-
-                User
-                 |
-                 |
-                 v
-
-          Orchestrator
-
-                 |
-                 |
-                 v
-
-          Planner Agent
-
-                 |
-                 |
-                 v
-
-      Microsoft AI Foundry Model
-
-                 |
-                 |
-                 v
-
-          Agent Response
-
-
-Future architecture:
-
-                     User
-                      |
-                      |
-                      v
-
-              Agent Orchestrator
-
-                      |
-                      |
-                      v
-
-               Planner Agent
-
-             /              \
-            /                \
-           v                  v
-
-  Knowledge Agent          Action Agent
-
-         |                     |
-         |                     |
-         v                     v
-
-   RAG Knowledge          Enterprise Tools
-   Base                   APIs / MCP Tools
-
+```text
+                   User
+                     │
+                     ▼
+              Planner Agent
+                     │
+        ┌────────────┴────────────┐
+        │                         │
+        ▼                         ▼
+ Knowledge Agent           Safety Agent
+        │                         │
+        ▼                         ▼
+ Azure AI Search      Azure AI Content Safety
+        │
+        ▼
+ Enterprise Documents
+```
 
 ---
 
-# Technology Stack
+## Repository Structure
 
-| Area | Technology |
-|---|---|
-| AI Platform | Microsoft AI Foundry |
-| Language Models | Azure-hosted Foundry models |
-| Embeddings | Azure embedding models |
-| SDK | OpenAI Python SDK |
-| Language | Python |
-| Configuration | python-dotenv |
-| Data Models | Pydantic |
-| Testing | Pytest |
-| Future Vector Search | Azure AI Search |
-| Monitoring | Application Insights |
-| Security | Microsoft Entra ID, Azure AI Content Safety |
-
----
-
-# Repository Structure
-
+```text
 multi-agent-foundry/
 
-│
-├── src/
-│ │
-│ ├── agents/
-│ │ ├── init.py
-│ │ ├── base.py
-│ │ └── planner.py
-│ │
-│ ├── config/
-│ │ ├── init.py
-│ │ ├── settings.py
-│ │ └── client.py
-│ │
-│ ├── orchestrator/
-│ │ ├── init.py
-│ │ └── orchestrator.py
-│ │
-│ ├── models.py
-│ ├── main.py
-│ └── init.py
-│
-├── tests/
-│ ├── test_chat.py
-│ └── test_embeddings.py
-│
-├── docs/
-│
-├── .env.example
-├── .gitignore
-├── requirements.txt
-└── README.md
+docs/
+src/
+tests/
+evaluation/
+data/
 
+README.md
+requirements.txt
+.env.example
+```
 
 ---
 
-# Prerequisites
+## Technology Stack
 
-Before running this project, ensure you have:
-
-## Required Software
-
-- Python 3.11 or later
-- Git
-- Azure subscription
-
-## Azure Requirements
-
-You need:
-
-- Microsoft AI Foundry project
-- Chat model deployment
-- Embedding model deployment
-- API credentials
-
-Example deployments:
-
-| Purpose | Deployment |
-|---|---|
-| Chat | gpt-5.2 |
-| Embeddings | text-embedding-3-small |
+| Component  | Technology                  |
+| ---------- | --------------------------- |
+| Framework  | Microsoft Foundry           |
+| LLM        | Azure OpenAI                |
+| Search     | Azure AI Search             |
+| Embeddings | text-embedding-3-large      |
+| Language   | Python 3.12+                |
+| Evaluation | Custom evaluation framework |
 
 ---
 
-# Azure AI Foundry Setup
+## Project Workflow
 
-## 1. Create Foundry Project
-
-Create a project in Microsoft AI Foundry.
-
-Example endpoint:
-
-https://<project-name>.services.ai.azure.com
-
+1. User submits a question.
+2. Planner Agent determines the workflow.
+3. Knowledge Agent retrieves relevant enterprise documents.
+4. Safety Agent validates the generated response.
+5. Final answer is returned.
 
 ---
 
-## 2. Deploy Models
+## Getting Started
 
-Deploy:
-
-### Chat Model
-
-Example:
-
-```
-gpt-5.2
-```
-
-
-Used by:
-
-- Planner Agent
-- Knowledge Agent
-- Action Agent
-
----
-
-### Embedding Model
-
-Example:
-
-```
-text-embedding-3-small
-```
-
-
-Used by:
-
-- Document processing
-- Semantic search
-- RAG retrieval
-
----
-
-# Environment Configuration
-
-Create a `.env` file in the project root.
-
-Example:
-
-```env
-FOUNDRY_ENDPOINT=https://<project>.services.ai.azure.com/openai/v1
-
-FOUNDRY_API_KEY=<your-api-key>
-
-CHAT_DEPLOYMENT=gpt-5.2
-
-EMBEDDING_DEPLOYMENT=text-embedding-3-small
-```
-
-# Installation
-
-Clone Repository
+### Clone the repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/<your-username>/multi-agent-foundry.git
 cd multi-agent-foundry
 ```
 
-# Create Virtual Environment
-
-## Windows:
+### Create a virtual environment
 
 ```bash
 python -m venv .venv
+```
+
+Windows:
+
+```bash
 .venv\Scripts\activate
 ```
 
-## Linux/Mac:
+Linux/macOS:
 
 ```bash
-python -m venv .venv
 source .venv/bin/activate
 ```
 
-# Install Dependencies
+### Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-# Running the Application
+### Configure environment variables
 
-Execute:
+Copy:
+
+```text
+.env.example
+```
+
+to
+
+```text
+.env
+```
+
+Update the Azure credentials.
+
+### Run the application
 
 ```bash
 python -m src.main
 ```
 
-Example flow:
+---
 
-User Request
+## Example Questions
 
-        |
-        v
+* How do I connect to the company VPN?
+* What is the password policy?
+* How do I install Visual Studio?
+* Explain the remote work policy.
+* Where can I find onboarding documentation?
 
-Orchestrator
+---
 
-        |
-        v
+## Roadmap
 
-Planner Agent
+* [x] Planner Agent
+* [ ] Knowledge Agent
+* [ ] Safety Agent
+* [ ] Azure AI Search Integration
+* [ ] RAG Evaluation
+* [ ] Deployment
+* [ ] Monitoring
+* [ ] CI/CD
 
-        |
-        v
+---
 
-Azure AI Foundry
+## License
 
-        |
-        v
-
-Response
-
-Example output:
-
-```bash
-Agent   : PlannerAgent
-
-Response:
-Microsoft AI Foundry provides tools and services
-for building and deploying AI applications.
-```
+MIT License

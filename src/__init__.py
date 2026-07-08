@@ -1,11 +1,5 @@
 """
-Enterprise Multi-Agent System.
+Enterprise IT Knowledge Assistant.
 
-Microsoft Foundry reference implementation for:
-
-- Agent orchestration
-- Retrieval-Augmented Generation (RAG)
-- AI governance
-- Evaluation
-- Safety
+A multi-agent AI application built with Azure AI Foundry.
 """
