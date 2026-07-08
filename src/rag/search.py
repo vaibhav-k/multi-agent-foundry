@@ -58,34 +58,31 @@ class VectorSearch:
         query: str,
         top_k: int = 5,
     ) -> List[Dict]:
-        """
-        Search enterprise documents.
 
-        Placeholder implementation.
+        try:
 
-        Vector query will be added after
-        index schema is created.
-        """
-
-        results = self.client.search(
-            search_text=query,
-            top=top_k,
-        )
-
-        documents = []
-
-        for item in results:
-
-            documents.append(
-                {
-                    "content": item.get("content"),
-                    "source": item.get("source"),
-                }
+            results = self.client.search(
+                search_text=query,
+                top=top_k,
             )
 
-        logger.info(
-            "Retrieved %s documents",
-            len(documents),
-        )
+            documents = []
 
-        return documents
+            for item in results:
+                documents.append(
+                    {
+                        "content": item.get("content"),
+                        "source": item.get("source"),
+                    }
+                )
+
+            return documents
+
+        except Exception as exc:
+
+            logger.warning(
+                "Azure Search unavailable: %s",
+                exc,
+            )
+
+            return []

@@ -64,6 +64,18 @@ class RAGPipeline:
 
         return self.search.search(query)
 
+    def retrieve_context(
+        self,
+        query: str,
+    ) -> str:
+        """
+        Retrieve and format enterprise context.
+        """
+
+        documents = self.retrieve(query)
+
+        return self.build_context(documents)
+
     def build_context(
         self,
         documents: List[Dict],

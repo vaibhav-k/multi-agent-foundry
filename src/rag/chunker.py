@@ -1,93 +1,55 @@
 """
-Document chunking utilities.
-
-Responsible for splitting enterprise documents into
-retrieval-friendly chunks while preserving metadata.
+Document chunking module.
 """
 
-from typing import Dict, List
-
-from src.config import get_logger
-
-logger = get_logger(__name__)
+import re
+from typing import List, Dict
 
 
 class DocumentChunker:
     """
-    Splits documents into smaller chunks.
-
-    Future enhancements:
-    - Token based splitting
-    - Semantic chunking
-    - Overlap optimization
+    Splits documents into searchable chunks.
     """
 
-    def __init__(
-        self,
-        chunk_size: int = 500,
-        overlap: int = 50,
-    ):
+    def __init__(self, chunk_size: int = 500):
         self.chunk_size = chunk_size
-        self.overlap = overlap
 
-    def chunk_document(
+    def chunk_documents(
         self,
-        document: Dict[str, str],
+        documents: List[Dict[str, str]],
     ) -> List[Dict[str, str]]:
-        """
-        Split a document into chunks.
-
-        Input:
-        {
-            "source": "vpn.md",
-            "content": "..."
-        }
-
-        Output:
-        [
-            {
-                "chunk_id": "vpn.md-001",
-                "source": "vpn.md",
-                "content": "..."
-            }
-        ]
-        """
-
-        content = document["content"]
-        source = document["source"]
-
-        words = content.split()
 
         chunks = []
 
-        start = 0
-        chunk_number = 1
+        for document in documents:
 
-        while start < len(words):
+            source = document["source"]
 
-            end = start + self.chunk_size
-
-            chunk_words = words[start:end]
-
-            chunks.append(
-                {
-                    "chunk_id": f"{source}-{chunk_number:03d}",
-                    "source": source,
-                    "content": " ".join(chunk_words),
-                }
+            # Azure Search compatible key
+            safe_source = re.sub(
+                r"[^a-zA-Z0-9_-]",
+                "_",
+                source,
             )
 
-            chunk_number += 1
+            content = document["content"]
 
-            start = end - self.overlap
+            words = content.split()
 
-            if start < 0:
-                start = 0
+            for index in range(
+                0,
+                len(words),
+                self.chunk_size,
+            ):
 
-        logger.info(
-            "Created %s chunks from %s",
-            len(chunks),
-            source,
-        )
+                chunk_words = words[index : index + self.chunk_size]
+
+                chunks.append(
+                    {
+                        "chunk_id": f"{safe_source}-{index//self.chunk_size+1}",
+                        "source": source,
+                        "content": " ".join(chunk_words),
+                    }
+                )
 
         return chunks

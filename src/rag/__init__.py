@@ -10,13 +10,19 @@ Contains:
 """
 
 from .chunker import DocumentChunker
+from .documents import DocumentLoader
 from .embeddings import EmbeddingGenerator
+from .index import create_enterprise_index
+from .ingestion import DocumentIngestion
 from .search import VectorSearch
 from .pipeline import RAGPipeline
 
 __all__ = [
     "DocumentChunker",
+    "DocumentLoader",
     "EmbeddingGenerator",
+    "create_enterprise_index",
+    "DocumentIngestion",
     "VectorSearch",
     "RAGPipeline",
 ]
