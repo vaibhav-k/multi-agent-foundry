@@ -19,13 +19,27 @@ def test_orchestrator_initialization():
 def test_orchestrator_calls_planner():
 
     planner = Mock()
+    planner.plan.return_value = "plan"
 
-    planner.run.return_value = "response"
+    knowledge = Mock()
+    knowledge.answer.return_value = "knowledge answer"
 
-    orchestrator = Orchestrator(planner=planner)
+    safety = Mock()
+    safety.review.return_value = "safe answer"
+
+    orchestrator = Orchestrator(
+        planner=planner,
+        knowledge_agent=knowledge,
+        safety_agent=safety,
+    )
 
     result = orchestrator.run("How do I connect VPN?")
 
-    planner.run.assert_called_once_with("How do I connect VPN?")
+    planner.plan.assert_called_once_with("How do I connect VPN?")
 
-    assert result == "response"
+    knowledge.answer.assert_called_once_with(user_input="How do I connect VPN?")
+
+    safety.review.assert_called_once_with("knowledge answer")
+
+    assert result.success is True
+    assert result.final_response == "knowledge answer"

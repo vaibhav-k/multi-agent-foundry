@@ -44,12 +44,14 @@ class Orchestrator:
     def __init__(
         self,
         planner: PlannerAgent,
-        knowledge_agent: KnowledgeAgent,
-        safety_agent: SafetyAgent,
+        knowledge_agent: KnowledgeAgent | None = None,
+        safety_agent: SafetyAgent | None = None,
     ):
         self.planner = planner
-        self.knowledge_agent = knowledge_agent
-        self.safety_agent = safety_agent
+
+        self.knowledge_agent = knowledge_agent if knowledge_agent else KnowledgeAgent()
+
+        self.safety_agent = safety_agent if safety_agent else SafetyAgent()
 
         logger.info("Multi-agent orchestrator initialized")
 

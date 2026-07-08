@@ -16,6 +16,7 @@ from .index import create_enterprise_index
 from .ingestion import DocumentIngestion
 from .search import VectorSearch
 from .pipeline import RAGPipeline
+from .retriever import RAGBuilder, RAGRetriever
 
 __all__ = [
     "DocumentChunker",
@@ -25,4 +26,6 @@ __all__ = [
     "DocumentIngestion",
     "VectorSearch",
     "RAGPipeline",
+    "RAGBuilder",
+    "RAGRetriever",
 ]

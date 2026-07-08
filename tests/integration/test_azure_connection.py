@@ -5,12 +5,6 @@ This test validates:
 - Azure AI Foundry project authentication
 - Model deployment availability
 - Responses API connectivity
-
-Run locally after configuring .env:
-
-    pytest tests/test_azure_connection.py -s
-
-For CI/CD, the test is skipped unless Azure configuration is available.
 """
 
 import pytest
@@ -48,13 +42,21 @@ def test_azure_foundry_connection():
 
     client = get_openai_client()
 
-    response = client.responses.create(
+    response = client.chat.completions.create(
         model=settings.azure_openai_chat_deployment,
-        input="Hello. Confirm that the Enterprise IT Knowledge Assistant backend is working.",
+        messages=[
+            {
+                "role": "user",
+                "content": "Hello. Confirm that the Enterprise IT Knowledge Assistant backend is working.",
+            }
+        ],
     )
 
-    assert response.output_text is not None
-    assert len(response.output_text.strip()) > 0
+    # Extract structural text directly out of the content object
+    output_text = response.choices[0].message.content
+
+    assert output_text is not None
+    assert len(output_text.strip()) > 0
 
     print("\nAzure AI Foundry response:")
-    print(response.output_text)
+    print(output_text)

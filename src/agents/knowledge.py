@@ -8,7 +8,7 @@ from typing import Optional
 
 from src.agents.base import BaseAgent
 from src.config import get_logger
-from src.rag import RAGPipeline
+from src.rag import RAGBuilder, RAGRetriever
 
 logger = get_logger(__name__)
 
@@ -35,7 +35,8 @@ class KnowledgeAgent(BaseAgent):
             prompt_file="knowledge.txt",
         )
 
-        self.rag = RAGPipeline()
+        self.rag = RAGBuilder()
+        self.retriever = RAGRetriever()
 
     def answer(
         self,
@@ -47,7 +48,7 @@ class KnowledgeAgent(BaseAgent):
 
         if not context:
 
-            documents = self.rag.retrieve(user_input)
+            documents = self.retriever.retrieve(user_input)
 
             context = self.rag.build_context(documents)
 
