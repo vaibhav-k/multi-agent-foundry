@@ -28,14 +28,17 @@ def test_orchestrator_calls_planner():
     planner.plan.return_value = PlannerDecision(
         requires_retrieval=True,
         requires_safety_review=True,
-        execution_steps=["retrieve_documents"],
-        intent="vpn_configuration",
+        execution_steps=[
+            "retrieve_documents",
+            "generate_answer",
+        ],
     )
 
     knowledge = Mock()
 
     knowledge.answer.return_value = GroundedAnswer(
-        answer="VPN setup instructions",
+        answer="Follow the VPN setup guide to configure access.",
+        citations=[],
         grounded=True,
         confidence=0.9,
     )
@@ -44,7 +47,7 @@ def test_orchestrator_calls_planner():
 
     safety.review.return_value = SafetyCheckResult(
         safe=True,
-        reason="Approved",
+        reason="Response complies with policy.",
     )
 
     orchestrator = Orchestrator(
@@ -57,8 +60,21 @@ def test_orchestrator_calls_planner():
 
     assert result.success is True
 
-    planner.plan.assert_called_once()
+    assert result.planner_output is not None
 
-    knowledge.answer.assert_called_once()
+    assert result.knowledge_output is not None
 
-    safety.review.assert_called_once()
+    assert result.safety_output is not None
+
+    assert result.final_response is not None
+
+    assert (
+        result.final_response.answer
+        == "Follow the VPN setup guide to configure access."
+    )
+
+    planner.plan.assert_called_once_with("How do I connect VPN?")
+
+    knowledge.answer.assert_called_once_with(user_input="How do I connect VPN?")
+
+    safety.review.assert_called_once_with(result.knowledge_output)

@@ -15,6 +15,9 @@ class StateManager:
         conversation_id: str,
         message: str,
     ) -> AgentState:
+        """
+        Create initial workflow state.
+        """
 
         return AgentState(
             conversation_id=conversation_id,
