@@ -19,24 +19,13 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+    # ==========================================================
     # Application
+    # ==========================================================
+
     log_level: str = Field(
         default="INFO",
         alias="LOG_LEVEL",
-    )
-
-    # ==========================================================
-    # Azure OpenAI Project
-    # ==========================================================
-
-    azure_ai_model_endpoint: str = Field(
-        ...,
-        alias="AZURE_AI_MODEL_ENDPOINT",
-    )
-
-    azure_ai_model_key: str = Field(
-        ...,
-        alias="AZURE_AI_MODEL_KEY",
     )
 
     # ==========================================================
@@ -52,7 +41,7 @@ class Settings(BaseSettings):
     # Model Deployments
     # ==========================================================
 
-    # Deployment name from:
+    # Deployment names configured in:
     # Azure AI Foundry
     # -> Project
     # -> Models + Endpoints
@@ -104,8 +93,5 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    """
-    Return cached application settings.
-    """
-
+    """Return cached application settings."""
     return Settings()

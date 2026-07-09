@@ -4,7 +4,7 @@ Azure AI Foundry connection integration test.
 This test validates:
 - Azure AI Foundry project authentication
 - Model deployment availability
-- Responses API connectivity
+- Chat Completions API connectivity
 """
 
 import pytest
@@ -13,17 +13,12 @@ from src.config import get_openai_client, get_settings
 
 
 def azure_configured() -> bool:
-    """
-    Check whether Azure AI Foundry configuration exists.
-    """
-
+    """Check whether Azure AI Foundry configuration exists."""
     try:
         settings = get_settings()
-
         return bool(
             settings.azure_ai_project_endpoint and settings.azure_openai_chat_deployment
         )
-
     except Exception:
         return False
 
@@ -34,12 +29,9 @@ def azure_configured() -> bool:
     reason="Azure AI Foundry configuration not available",
 )
 def test_azure_foundry_connection():
-    """
-    Validate Azure AI Foundry model connectivity.
-    """
+    """Validate Azure AI Foundry model connectivity."""
 
     settings = get_settings()
-
     client = get_openai_client()
 
     response = client.chat.completions.create(
@@ -47,16 +39,20 @@ def test_azure_foundry_connection():
         messages=[
             {
                 "role": "user",
-                "content": "Hello. Confirm that the Enterprise IT Knowledge Assistant backend is working.",
+                "content": "Reply with exactly the word OK.",
             }
         ],
+        max_completion_tokens=10,
     )
 
-    # Extract structural text directly out of the content object
+    assert response.id
+    assert response.model
+    assert response.choices
+
     output_text = response.choices[0].message.content
 
     assert output_text is not None
-    assert len(output_text.strip()) > 0
+    assert output_text.strip()
+    assert response.choices[0].finish_reason == "stop"
 
-    print("\nAzure AI Foundry response:")
-    print(output_text)
+    print(f"\n\nAzure AI Foundry response:\t{output_text}")
