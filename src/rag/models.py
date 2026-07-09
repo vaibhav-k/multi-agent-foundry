@@ -1,54 +1,109 @@
 """
-RAG domain models.
+RAG data models.
 
-Defines document and chunk structures
-used throughout the retrieval pipeline.
+Shared models used across:
+
+- Document ingestion
+- Embedding generation
+- Azure AI Search
+- Retrieval
+- Reranking
+- Citation generation
 """
 
-from typing import Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
 
 class DocumentMetadata(BaseModel):
     """
-    Metadata associated with an enterprise document.
+    Metadata associated with enterprise documents.
+
+    Used during ingestion and indexing.
     """
 
-    source: str
+    source: Optional[str] = None
 
     title: Optional[str] = None
 
-    department: Optional[str] = "IT"
+    section: Optional[str] = None
 
-    classification: Optional[str] = "internal"
+    document_type: Optional[str] = None
+
+    author: Optional[str] = None
+
+    created_at: Optional[str] = None
+
+    extra: Dict[str, Any] = Field(default_factory=dict)
 
 
-class Document(BaseModel):
+class RAGDocument(BaseModel):
     """
-    Enterprise source document.
+    Enterprise document representation.
+
+    Common contract between:
+
+    - Ingestion
+    - Embeddings
+    - Search
+    - Retrieval
+    - Reranking
+    - Citations
     """
 
     document_id: str
 
+    source: Optional[str] = None
+
+    title: Optional[str] = None
+
     content: str
 
-    metadata: DocumentMetadata
+    embedding: Optional[List[float]] = None
+
+    score: Optional[float] = None
+
+    metadata: DocumentMetadata | Dict[str, Any] = Field(default_factory=dict)
+
+
+class SearchResult(BaseModel):
+    """
+    Azure AI Search response wrapper.
+    """
+
+    query: str
+
+    documents: List[RAGDocument] = Field(default_factory=list)
 
 
 class DocumentChunk(BaseModel):
     """
-    Searchable document chunk.
+    Intermediate chunk before embedding.
     """
 
     chunk_id: str
 
-    document_id: str
+    source: Optional[str] = None
+
+    title: Optional[str] = None
 
     content: str
 
-    metadata: Dict[str, str] = Field(default_factory=dict)
+    metadata: DocumentMetadata | Dict[str, Any] = Field(default_factory=dict)
+
+
+class Citation(BaseModel):
+    """
+    Citation generated from retrieved documents.
+    """
+
+    document_id: Optional[str] = None
+
+    source: Optional[str] = None
+
+    title: Optional[str] = None
+
+    score: Optional[float] = None
 
     section: Optional[str] = None
-
-    chunk_number: int

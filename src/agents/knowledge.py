@@ -35,8 +35,9 @@ from src.rag import (
 )
 
 from src.rag.citations import CitationBuilder
-from src.rag.query import QueryRewriter
+from src.rag.models import RAGDocument
 from src.rag.reranker import DocumentReranker
+from src.rag.query import QueryRewriter
 
 logger = get_logger(__name__)
 
@@ -110,10 +111,6 @@ class KnowledgeAgent(BaseAgent):
 
             logger.info(f"Retrieved {len(retrieved_documents)} documents")
 
-            # documents = self.reranker.rerank(
-            #     search_query,
-            #     retrieved_documents,
-            # )
             documents = retrieved_documents
 
             final_context = self.rag.build_context(documents)
@@ -174,14 +171,11 @@ Answer:
         documents: list,
     ) -> float:
         """
-        Calculate normalized confidence score.
+        Calculate normalized confidence from retrieval scores.
 
-        Uses:
-        - retrieval availability
-        - reranker/search score
-
-        Returns:
-            Float between 0 and 1.
+        Azure AI Search scores are relevance scores,
+        not probabilities. Normalize them into
+        a 0-1 confidence range.
         """
 
         if not documents:
@@ -191,21 +185,16 @@ Answer:
 
         for document in documents:
 
-            score = document.get(
-                "score",
-                0,
-            )
-
-            scores.append(score)
+            if document.score is not None:
+                scores.append(float(document.score))
 
         if not scores:
             return 0.0
 
-        average_score = sum(scores) / len(scores)
+        highest_score = max(scores)
 
-        # Normalize Azure Search score
         confidence = min(
-            average_score / 5,
+            highest_score / 5.0,
             1.0,
         )
 

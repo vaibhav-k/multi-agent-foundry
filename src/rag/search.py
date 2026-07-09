@@ -1,52 +1,68 @@
 """
 Azure AI Search integration.
 
-Supports:
-- Keyword search
-- Vector search
-- Hybrid retrieval
+Responsibilities:
+
+- Execute enterprise document search
+- Support hybrid retrieval
+- Map Azure Search results into RAGDocument
 """
 
-from typing import Dict, List, Optional
+from typing import List
+
+from azure.core.credentials import AzureKeyCredential
+from azure.search.documents import SearchClient
 
 from src.config import get_logger
-from src.config.client import get_search_client
+from src.config.settings import get_settings
+from src.rag.models import RAGDocument
 
 logger = get_logger(__name__)
 
 
 class VectorSearch:
     """
-    Enterprise search wrapper.
+    Azure AI Search wrapper.
 
-    Provides:
-    - keyword retrieval
-    - vector retrieval
-    - hybrid retrieval
+    Converts Azure Search documents into
+    internal RAGDocument objects.
     """
 
-    def __init__(self):
+    def __init__(
+        self,
+        client: SearchClient | None = None,
+    ):
 
-        self.client = get_search_client()
+        settings = get_settings()
+
+        self.client = (
+            client
+            if client
+            else SearchClient(
+                endpoint=settings.azure_search_endpoint,
+                index_name=settings.azure_search_index,
+                credential=AzureKeyCredential(settings.azure_search_key),
+            )
+        )
 
     def search(
         self,
         query: str,
         top_k: int = 5,
-    ) -> List[Dict]:
+    ) -> List[RAGDocument]:
         """
-        Execute hybrid search.
+        Execute enterprise document search.
 
-        Azure AI Search combines:
-        - text matching
-        - vector relevance
-        - semantic ranking
+        Current mode:
+        - Text search
+
+        Ready for:
+        - Vector search
+        - Hybrid search
+        - Semantic ranking
         """
 
-        logger.info(
-            "Hybrid search query: %s",
-            query,
-        )
+        logger.info(f"Search query: {query}")
 
         results = self.client.search(
             search_text=query,
@@ -58,39 +74,69 @@ class VectorSearch:
 
         for result in results:
 
-            documents.append(self._map_result(result))
+            document = self._map_result(result)
 
-        logger.info(
-            "Retrieved %s documents",
-            len(documents),
-        )
+            if document:
+
+                documents.append(document)
+
+        logger.info(f"Retrieved {len(documents)} documents")
 
         return documents
 
     def _map_result(
         self,
-        result,
-    ) -> Dict:
+        result: dict,
+    ) -> RAGDocument | None:
         """
-        Normalize Azure Search result.
-
-        Avoid dependency on fixed
-        index fields.
+        Convert Azure Search result into
+        RAGDocument.
         """
 
-        return {
-            "id": result.get("id"),
-            "source": result.get(
-                "source",
-                result.get("metadata_storage_name"),
-            ),
-            "content": result.get(
-                "content",
-                "",
-            ),
-            "score": result.get(
-                "@search.score",
-                0,
-            ),
-            "metadata": result,
-        }
+        content = result.get("content") or result.get("text")
+
+        if not content:
+
+            logger.warning("Skipping result without content")
+
+            return None
+
+        document_id = (
+            result.get("document_id")
+            or result.get("chunk_id")
+            or result.get("id")
+            or "unknown"
+        )
+
+        source = result.get("source") or result.get("file_name")
+
+        title = result.get("title") or source
+
+        score = result.get("@search.score")
+
+        return RAGDocument(
+            document_id=document_id,
+            source=source,
+            title=title,
+            content=content,
+            score=score,
+            metadata={
+                "search_score": score,
+            },
+        )
+
+    def upload_documents(
+        self,
+        documents: List[dict],
+    ):
+        """
+        Upload documents into Azure AI Search index.
+        """
+
+        logger.info(f"Uploading {len(documents)} documents")
+
+        result = self.client.upload_documents(documents)
+
+        logger.info("Upload completed")
+
+        return result

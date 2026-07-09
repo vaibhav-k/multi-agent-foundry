@@ -18,9 +18,10 @@ Document Reranker
 Top Relevant Documents
 """
 
-from typing import Dict, List
+from typing import Dict
 
 from src.config import get_logger
+from src.rag.models import RAGDocument
 
 logger = get_logger(__name__)
 
@@ -29,8 +30,7 @@ class DocumentReranker:
     """
     Enterprise reranking component.
 
-    Keeps retrieval candidates and
-    reorders them based on relevance.
+    Keeps retrieval candidates and reorders them based on relevance.
     """
 
     def __init__(
@@ -43,42 +43,60 @@ class DocumentReranker:
     def rerank(
         self,
         query: str,
-        documents: List[Dict],
-    ) -> List[Dict]:
+        documents: list[RAGDocument | dict],
+    ) -> list:
         """
-        Rerank retrieved documents.
+        Reranks retrieved documents.
 
-        Returns:
-            Top ranked documents.
+        Supports:
+        - RAGDocument objects
+        - Legacy dictionaries
         """
 
         if not documents:
-
             return []
 
         query_terms = set(query.lower().split())
 
-        ranked_documents = []
+        scored_documents = []
 
         for document in documents:
 
-            score = self.calculate_score(
-                query_terms,
-                document,
-            )
+            if isinstance(document, dict):
 
-            enriched_document = document.copy()
+                content = document.get(
+                    "content",
+                    "",
+                ).lower()
 
-            enriched_document["rerank_score"] = score
+                score = document.get(
+                    "score",
+                    0,
+                )
 
-            ranked_documents.append(enriched_document)
+                keyword_score = sum(1 for term in query_terms if term in content)
 
-        ranked_documents.sort(
-            key=lambda item: item["rerank_score"],
+                document["score"] = score + keyword_score
+
+                scored_documents.append(document)
+
+                continue
+
+            content = document.content.lower() if document.content else ""
+
+            keyword_score = sum(1 for term in query_terms if term in content)
+
+            existing_score = document.score or 0
+
+            document.score = existing_score + keyword_score
+
+            scored_documents.append(document)
+
+        return sorted(
+            scored_documents,
+            key=lambda x: (x.score if hasattr(x, "score") else x.get("score", 0)),
             reverse=True,
         )
-
-        return ranked_documents[: self.top_k]
 
     def calculate_score(
         self,

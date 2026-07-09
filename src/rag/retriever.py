@@ -1,13 +1,31 @@
 """
-Enterprise document retrieval.
+RAG Retriever.
 
-Retrieves relevant knowledge chunks
+Responsible for retrieving enterprise documents
 from Azure AI Search.
+
+Pipeline:
+
+User Query
+    |
+Query Rewrite
+    |
+RAGRetriever
+    |
+Azure AI Search
+    |
+RAGDocument[]
+    |
+Document Reranker
+    |
+Knowledge Agent
 """
 
-from typing import Any, List, Dict
+from typing import List
 
 from src.config import get_logger
+
+from src.rag.models import RAGDocument
 from src.rag.search import VectorSearch
 
 logger = get_logger(__name__)
@@ -15,122 +33,77 @@ logger = get_logger(__name__)
 
 class RAGRetriever:
     """
-    Retrieves enterprise knowledge documents.
+    Enterprise document retriever.
 
-    Pipeline:
+    Responsibilities:
 
-    Query
-      |
-      v
-    Azure AI Search
-      |
-      v
-    Normalized Documents
+    - Execute search queries
+    - Retrieve relevant documents
+    - Normalize search results
+    - Provide documents for reranking
     """
 
     def __init__(
         self,
-        top_k: int = 5,
+        search: VectorSearch | None = None,
     ):
+        """
+        Initialize retriever.
 
-        self.search = VectorSearch()
+        Allows dependency injection
+        for testing.
+        """
 
-        self.top_k = top_k
+        self.search = search if search else VectorSearch()
 
     def retrieve(
         self,
         query: str,
-        top_k: int | None = None,
-    ) -> List[Dict]:
+        top_k: int = 5,
+    ) -> List[RAGDocument]:
         """
-        Retrieve relevant enterprise documents.
+        Retrieve enterprise documents.
 
         Args:
 
             query:
-                Search query.
+                Search query after query rewriting.
 
             top_k:
-                Override default result count.
+                Number of documents to retrieve.
+
 
         Returns:
 
-            List of normalized documents.
+            List of RAGDocument objects.
         """
 
-        limit = top_k if top_k else self.top_k
-
         logger.info(
-            "Retrieving documents. query=%s top_k=%s",
+            "Retrieving documents for query: %s",
             query,
-            limit,
         )
 
         documents = self.search.search(
             query=query,
-            top_k=limit,
+            top_k=top_k,
         )
 
-        if not documents:
-
-            logger.warning(
-                "No documents found for query=%s",
-                query,
-            )
-
-            return []
+        filtered_documents = [document for document in documents if document.content]
 
         logger.info(
-            "Retrieved %s documents",
-            len(documents),
+            "Retrieved %s valid documents",
+            len(filtered_documents),
         )
 
-        return self._normalize(documents)
-
-    def _normalize(
-        self,
-        documents: List[Dict],
-    ) -> List[Dict]:
-        """
-        Ensure every document has
-        required RAG fields.
-        """
-
-        normalized = []
-
-        for document in documents:
-
-            normalized.append(
-                {
-                    "id": document.get("id"),
-                    "source": document.get(
-                        "source",
-                        "unknown",
-                    ),
-                    "content": document.get(
-                        "content",
-                        "",
-                    ),
-                    "score": document.get(
-                        "score",
-                        0,
-                    ),
-                    "metadata": document.get(
-                        "metadata",
-                        {},
-                    ),
-                }
-            )
-
-        return normalized
+        return filtered_documents
 
 
 class RAGBuilder:
     """
     Builds LLM context from retrieved documents.
 
-    Converts search results into a grounded context block
-    that can be passed to an agent.
+    Converts RAGDocument objects into a grounded
+    context block for the Knowledge Agent.
     """
 
     def __init__(
@@ -141,24 +114,24 @@ class RAGBuilder:
 
     def build_context(
         self,
-        documents: List[Dict[str, Any]],
+        documents: List[RAGDocument],
     ) -> str:
         """
-        Convert retrieved documents into context text.
+        Convert RAGDocument objects into LLM context.
 
-        Expected document format:
+        Args:
 
-        {
-            "content": "...",
-            "source": "document.pdf"
-        }
+            documents:
+                List of RAGDocument objects.
 
         Returns:
+
             Formatted context string.
         """
 
         if not documents:
-            return "No relevant enterprise documents found."
+
+            return "No relevant enterprise " "documents found."
 
         context_parts = []
 
@@ -166,20 +139,23 @@ class RAGBuilder:
             documents[: self.max_documents],
             start=1,
         ):
-            content = document.get(
-                "content",
-                "",
-            )
 
-            source = document.get(
-                "source",
-                "unknown",
-            )
+            content = document.content or ""
+
+            source = document.source or document.title or "unknown"
+
+            score = document.score
 
             context_parts.append(f"""
 Document {index}
-Source: {source}
 
+Source:
+{source}
+
+Relevance Score:
+{score}
+
+Content:
 {content}
 """.strip())
 

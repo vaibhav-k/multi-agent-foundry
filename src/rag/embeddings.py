@@ -1,67 +1,123 @@
 """
-Embedding generation.
+Embedding generation module.
 
-Creates vector embeddings for
-enterprise document chunks.
+Responsible for generating vector embeddings
+for document chunks.
+
+Flow:
+
+Document Chunk
+        |
+        v
+Embedding Model
+        |
+        v
+Chunk + Embedding Vector
 """
 
-from typing import List
+from typing import Dict, List
 
 from src.config import get_logger
-from src.config.client import get_openai_client
-from src.config.settings import get_settings
-
-from src.rag.models import DocumentChunk
+from src.config.client import get_embedding_client
 
 logger = get_logger(__name__)
 
 
 class EmbeddingGenerator:
     """
-    Generates embeddings using
-    Azure AI Foundry OpenAI-compatible client.
+    Generates embeddings for RAG documents.
+
+    Responsibilities:
+
+    - Generate vector embeddings
+    - Attach vectors to chunks
+    - Return Azure AI Search compatible data
     """
 
-    def __init__(self):
+    def __init__(
+        self,
+        client=None,
+        deployment_name: str | None = None,
+    ):
+        """
+        Initialize embedding client.
 
-        self.client = get_openai_client()
+        Dependency injection is supported
+        for testing.
+        """
 
-        self.settings = get_settings()
+        self.client = client if client else get_embedding_client()
+
+        self.deployment_name = deployment_name
+
+    def embed_text(
+        self,
+        text: str,
+    ) -> List[float]:
+        """
+        Generate embedding for text.
+        """
+
+        logger.debug("Generating embedding")
+
+        response = self.client.embeddings.create(
+            model=self.deployment_name,
+            input=text,
+        )
+
+        return response.data[0].embedding
 
     def embed_chunks(
         self,
-        chunks: List[DocumentChunk],
-    ) -> List[dict]:
+        chunks: List[Dict[str, str]],
+    ) -> List[Dict]:
         """
-        Generate embeddings for chunks.
+        Generate embeddings for document chunks.
+
+        Input:
+
+        [
+            {
+                "chunk_id": "vpn-1",
+                "source": "vpn.md",
+                "content": "..."
+            }
+        ]
+
+
+        Output:
+
+        [
+            {
+                "chunk_id": "vpn-1",
+                "source": "vpn.md",
+                "content": "...",
+                "embedding": [...]
+            }
+        ]
         """
 
-        results = []
+        embedded_chunks = []
+
+        logger.info(
+            "Embedding %s chunks",
+            len(chunks),
+        )
 
         for chunk in chunks:
 
-            embedding = self.client.embeddings.create(
-                model=(self.settings.azure_openai_embedding_deployment),
-                input=chunk.content,
-            )
+            embedding = self.embed_text(chunk["content"])
 
-            vector = embedding.data[0].embedding
+            embedded_chunk = {
+                **chunk,
+                "embedding": embedding,
+            }
 
-            results.append(
-                {
-                    "chunk_id": chunk.chunk_id,
-                    "document_id": chunk.document_id,
-                    "content": chunk.content,
-                    "section": chunk.section,
-                    "source": chunk.metadata.get("source"),
-                    "title": chunk.metadata.get("title"),
-                    "embedding": vector,
-                }
-            )
+            embedded_chunks.append(embedded_chunk)
 
         logger.info(
             "Generated embeddings for %s chunks",
-            len(results),
+            len(embedded_chunks),
         )
 
-        return results
+        return embedded_chunks
