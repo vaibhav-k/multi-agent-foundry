@@ -1,19 +1,36 @@
 """
 RAG pipeline orchestration.
 
-Flow:
+Enterprise Retrieval-Augmented Generation pipeline.
+
+Ingestion Flow:
 
 Document
-   |
-Chunking
-   |
-Embedding
-   |
+    |
+Document Chunking
+    |
+Embedding Generation
+    |
+Azure AI Search Index
+    |
+Stored Knowledge Base
+
+
+Retrieval Flow:
+
+User Query
+    |
+Query Optimization
+    |
 Azure AI Search
-   |
-Retrieval
-   |
-Agent response
+    |
+Retrieved Documents
+    |
+Context Builder
+    |
+Knowledge Agent
+    |
+Grounded Response
 """
 
 from typing import Dict, List
@@ -29,7 +46,16 @@ logger = get_logger(__name__)
 
 class RAGPipeline:
     """
-    Enterprise Retrieval Augmented Generation pipeline.
+    Enterprise Retrieval-Augmented Generation pipeline.
+
+    Responsible for:
+
+    - Document ingestion
+    - Chunk generation
+    - Embedding creation
+    - Search indexing
+    - Enterprise document retrieval
+    - Context construction
     """
 
     def __init__(self):
@@ -40,41 +66,80 @@ class RAGPipeline:
 
         self.search = VectorSearch()
 
+    # ------------------------------------------------------------------
+    # Ingestion
+    # ------------------------------------------------------------------
+
     def ingest_document(
         self,
         document: Dict[str, str],
     ):
         """
-        Process and store a document.
+        Process and store an enterprise document.
+
+        Steps:
+
+        1. Split document into chunks
+        2. Generate embeddings
+        3. Upload vectors to Azure AI Search
         """
+
+        logger.info("Starting document ingestion")
 
         chunks = self.chunker.chunk_document(document)
 
+        logger.info(
+            "Generated %s chunks",
+            len(chunks),
+        )
+
         embedded_chunks = self.embeddings.embed_chunks(chunks)
 
-        return self.search.upload_documents(embedded_chunks)
+        result = self.search.upload_documents(embedded_chunks)
+
+        logger.info("Document ingestion completed")
+
+        return result
+
+    # ------------------------------------------------------------------
+    # Retrieval
+    # ------------------------------------------------------------------
 
     def retrieve(
         self,
         query: str,
     ) -> List[Dict]:
         """
-        Retrieve relevant enterprise context.
+        Retrieve relevant enterprise documents.
+
+        Returns normalized search results
+        for downstream agents.
         """
 
-        return self.search.search(query)
+        logger.info(
+            "Retrieving documents for query: %s",
+            query,
+        )
+
+        documents = self.search.search(query)
+
+        return [self.normalize_document(doc) for doc in documents]
 
     def retrieve_context(
         self,
         query: str,
     ) -> str:
         """
-        Retrieve and format enterprise context.
+        Retrieve documents and build LLM context.
         """
 
         documents = self.retrieve(query)
 
         return self.build_context(documents)
+
+    # ------------------------------------------------------------------
+    # Context Construction
+    # ------------------------------------------------------------------
 
     def build_context(
         self,
@@ -82,7 +147,89 @@ class RAGPipeline:
     ) -> str:
         """
         Convert retrieved documents into
-        model context.
+        grounded model context.
+
+        Includes metadata to improve
+        citation quality.
         """
 
-        return "\n\n".join([doc["content"] for doc in documents if doc.get("content")])
+        if not documents:
+            return ""
+
+        context_blocks = []
+
+        for document in documents:
+
+            content = document.get("content")
+
+            if not content:
+                continue
+
+            source = document.get(
+                "source",
+                "unknown",
+            )
+
+            section = document.get(
+                "section",
+                "",
+            )
+
+            block = f"""
+Source:
+{source}
+
+Section:
+{section}
+
+Content:
+{content}
+"""
+
+            context_blocks.append(block.strip())
+
+        return "\n\n---\n\n".join(context_blocks)
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    def normalize_document(
+        self,
+        document: Dict,
+    ) -> Dict:
+        """
+        Normalize Azure AI Search output.
+
+        Ensures downstream agents receive
+        a predictable structure.
+        """
+
+        return {
+            "document_id": document.get(
+                "id",
+                document.get("document_id"),
+            ),
+            "title": document.get(
+                "title",
+                "",
+            ),
+            "content": document.get(
+                "content",
+                "",
+            ),
+            "source": document.get(
+                "source",
+                document.get(
+                    "title",
+                    "unknown",
+                ),
+            ),
+            "section": document.get(
+                "section",
+            ),
+            "score": document.get(
+                "score",
+                0.0,
+            ),
+        }

@@ -1,14 +1,43 @@
 """
 Knowledge Agent.
 
-Uses enterprise retrieval and generates grounded answers.
+Responsible for enterprise knowledge retrieval and
+grounded response generation.
+
+Pipeline:
+
+User Question
+      |
+Query Rewrite
+      |
+Azure AI Search Retrieval
+      |
+Document Reranking
+      |
+Context Construction
+      |
+LLM Generation
+      |
+Citation Builder
+      |
+Grounded Answer
 """
 
 from typing import Optional
 
 from src.agents.base import BaseAgent
 from src.config import get_logger
-from src.rag import RAGBuilder, RAGRetriever
+from src.models import (
+    DocumentReference,
+    GroundedAnswer,
+)
+from src.rag import (
+    RAGBuilder,
+    RAGRetriever,
+)
+from src.rag.citations import CitationBuilder
+from src.rag.query import QueryRewriter
+from src.rag.reranker import DocumentReranker
 
 logger = get_logger(__name__)
 
@@ -17,15 +46,13 @@ class KnowledgeAgent(BaseAgent):
     """
     Enterprise knowledge retrieval agent.
 
-    Flow:
+    Responsibilities:
 
-    User question
-        |
-    Azure AI Search
-        |
-    Retrieved context
-        |
-    LLM response
+    - Understand knowledge requests
+    - Retrieve enterprise documents
+    - Improve retrieval quality
+    - Generate grounded answers
+    - Provide supporting citations
     """
 
     def __init__(self):
@@ -36,46 +63,129 @@ class KnowledgeAgent(BaseAgent):
         )
 
         self.rag = RAGBuilder()
+
         self.retriever = RAGRetriever()
+
+        self.query_rewriter = QueryRewriter()
+
+        self.reranker = DocumentReranker()
+
+        self.citation_builder = CitationBuilder()
 
     def answer(
         self,
         user_input: str,
         context: Optional[str] = None,
-    ) -> str:
+    ) -> GroundedAnswer:
+        """
+        Execute the knowledge retrieval pipeline.
+
+        Args:
+            user_input:
+                Original user question.
+
+            context:
+                Optional pre-built context.
+
+        Returns:
+            GroundedAnswer containing:
+            - answer
+            - citations
+            - confidence
+        """
 
         logger.info("KnowledgeAgent processing request")
 
-        if not context:
+        documents = []
 
-            documents = self.retriever.retrieve(user_input)
+        if context:
 
-            context = self.rag.build_context(documents)
+            final_context = context
 
-        return self.run(
+        else:
+
+            search_query = self.query_rewriter.rewrite(user_input)
+
+            logger.debug(
+                "Knowledge search query: %s",
+                search_query,
+            )
+
+            documents = self.retriever.retrieve(search_query)
+
+            documents = self.reranker.rerank(
+                search_query,
+                documents,
+            )
+
+            final_context = self.rag.build_context(documents)
+
+        answer = self.generate(
             user_input=user_input,
-            context=context,
+            context=final_context,
         )
 
-    def run(
+        citations = self.citation_builder.build(documents)
+
+        return GroundedAnswer(
+            answer=answer,
+            citations=citations,
+            grounded=bool(documents),
+            confidence=self.calculate_confidence(documents),
+        )
+
+    def generate(
         self,
         user_input: str,
-        context: Optional[str] = None,
+        context: str,
     ) -> str:
         """
-        Execute knowledge workflow.
+        Generate answer using enterprise context.
         """
 
         prompt = f"""
-    Context:
-    {context or "No enterprise context available."}
+Context:
+
+{context or "No enterprise context available."}
 
 
-    Question:
-    {user_input}
+Question:
+
+{user_input}
 
 
-    Answer using only the context above.
-    """
+Instructions:
+
+- Answer only using the provided context.
+- Do not invent information.
+- If the answer is unavailable, state that
+  the information was not found.
+"""
 
         return super().run(user_input=prompt)
+
+    def calculate_confidence(
+        self,
+        documents: list,
+    ) -> float:
+        """
+        Estimate response confidence.
+
+        Current implementation:
+        - More retrieved documents = higher confidence.
+
+        Replace with evaluation model later.
+        """
+
+        if not documents:
+            return 0.0
+
+        confidence = min(
+            len(documents) / 5,
+            1.0,
+        )
+
+        return round(
+            confidence,
+            2,
+        )

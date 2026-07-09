@@ -1,0 +1,10 @@
+[
+  {
+    "question": "How do I configure the company VPN?",
+    "expected_source": "vpn-guide.md"
+  },
+  {
+    "question": "How do I install the VPN client?",
+    "expected_source": "vpn_setup.md"
+  }
+]
