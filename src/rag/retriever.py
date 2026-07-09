@@ -16,97 +16,113 @@ logger = get_logger(__name__)
 class RAGRetriever:
     """
     Retrieves enterprise knowledge documents.
+
+    Pipeline:
+
+    Query
+      |
+      v
+    Azure AI Search
+      |
+      v
+    Normalized Documents
     """
 
-    def __init__(self):
+    def __init__(
+        self,
+        top_k: int = 5,
+    ):
 
         self.search = VectorSearch()
+
+        self.top_k = top_k
 
     def retrieve(
         self,
         query: str,
-        top_k: int = 5,
+        top_k: int | None = None,
     ) -> List[Dict]:
         """
-        Retrieve relevant documents.
+        Retrieve relevant enterprise documents.
+
+        Args:
+
+            query:
+                Search query.
+
+            top_k:
+                Override default result count.
 
         Returns:
 
-        [
-            {
-                "content": "...",
-                "source": "vpn.md",
-                "title": "VPN Guide",
-                "section": "Setup",
-                "score": 0.91
-            }
-        ]
+            List of normalized documents.
         """
 
-        logger.info(
-            "Retrieving documents for query: %s",
-            query,
-        )
-
-        results = self.search.search(
-            query,
-            top_k,
-        )
+        limit = top_k if top_k else self.top_k
 
         logger.info(
-            "Raw search results count: %s",
-            len(results),
+            "Retrieving documents. query=%s top_k=%s",
+            query,
+            limit,
         )
 
-        for result in results:
-            logger.info(
-                "Search result: %s",
-                result,
+        documents = self.search.search(
+            query=query,
+            top_k=limit,
+        )
+
+        if not documents:
+
+            logger.warning(
+                "No documents found for query=%s",
+                query,
             )
 
-        logger.info(
-            "Retriever returned %s documents",
-            len(results),
-        )
-
-        logger.info(
-            "Documents: %s",
-            results,
-        )
-
-        documents = []
-
-        for item in results:
-
-            documents.append(
-                {
-                    "document_id": item.get("document_id"),
-                    "content": item.get(
-                        "content",
-                        "",
-                    ),
-                    "source": item.get(
-                        "source",
-                    ),
-                    "title": item.get(
-                        "title",
-                    ),
-                    "section": item.get(
-                        "section",
-                    ),
-                    "score": item.get(
-                        "score",
-                        0.0,
-                    ),
-                }
-            )
+            return []
 
         logger.info(
             "Retrieved %s documents",
             len(documents),
         )
 
-        return documents
+        return self._normalize(documents)
+
+    def _normalize(
+        self,
+        documents: List[Dict],
+    ) -> List[Dict]:
+        """
+        Ensure every document has
+        required RAG fields.
+        """
+
+        normalized = []
+
+        for document in documents:
+
+            normalized.append(
+                {
+                    "id": document.get("id"),
+                    "source": document.get(
+                        "source",
+                        "unknown",
+                    ),
+                    "content": document.get(
+                        "content",
+                        "",
+                    ),
+                    "score": document.get(
+                        "score",
+                        0,
+                    ),
+                    "metadata": document.get(
+                        "metadata",
+                        {},
+                    ),
+                }
+            )
+
+        return normalized
 
 
 class RAGBuilder:

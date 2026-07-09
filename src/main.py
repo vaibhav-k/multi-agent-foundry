@@ -22,6 +22,10 @@ from src.config import get_logger
 
 from src.orchestrator import Orchestrator
 
+from src.utils.formatter import (
+    format_workflow_result,
+)
+
 logger = get_logger(__name__)
 
 
@@ -65,35 +69,28 @@ def main():
     result = orchestrator.run(user_request)
 
     # -------------------------------------------------
-    # Display result
+    # Display workflow summary
     # -------------------------------------------------
 
-    print("\n========== WORKFLOW RESULT ==========\n")
+    print("\n========== WORKFLOW SUMMARY ==========\n")
 
     print("User Request:")
 
     print(result.user_query)
 
-    print("\nPlanner Output:")
+    print("\nPlanner:")
 
     print(result.planner_output)
 
-    print("\nKnowledge Response:")
-
-    print(result.knowledge_output)
-
-    print("\nSafety Review:")
+    print("\nSafety:")
 
     print(result.safety_output)
 
-    print("\nFinal Response:")
+    # -------------------------------------------------
+    # Display final answer
+    # -------------------------------------------------
 
-    print(result.final_response)
-
-    print(
-        "\nSuccess:",
-        result.success,
-    )
+    print(format_workflow_result(result))
 
 
 if __name__ == "__main__":
