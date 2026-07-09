@@ -1,7 +1,7 @@
 """
-RAG retriever.
+Enterprise document retrieval.
 
-Responsible for retrieving enterprise knowledge
+Retrieves relevant knowledge chunks
 from Azure AI Search.
 """
 
@@ -15,26 +15,98 @@ logger = get_logger(__name__)
 
 class RAGRetriever:
     """
-    Enterprise knowledge retriever.
+    Retrieves enterprise knowledge documents.
     """
 
     def __init__(self):
+
         self.search = VectorSearch()
 
     def retrieve(
         self,
         query: str,
-        top_k: int = 3,
+        top_k: int = 5,
     ) -> List[Dict]:
+        """
+        Retrieve relevant documents.
 
-        logger.info(f"Retrieving documents for query: {query}")
+        Returns:
 
-        results = self.search.search(
-            query=query,
-            top_k=top_k,
+        [
+            {
+                "content": "...",
+                "source": "vpn.md",
+                "title": "VPN Guide",
+                "section": "Setup",
+                "score": 0.91
+            }
+        ]
+        """
+
+        logger.info(
+            "Retrieving documents for query: %s",
+            query,
         )
 
-        return results
+        results = self.search.search(
+            query,
+            top_k,
+        )
+
+        logger.info(
+            "Raw search results count: %s",
+            len(results),
+        )
+
+        for result in results:
+            logger.info(
+                "Search result: %s",
+                result,
+            )
+
+        logger.info(
+            "Retriever returned %s documents",
+            len(results),
+        )
+
+        logger.info(
+            "Documents: %s",
+            results,
+        )
+
+        documents = []
+
+        for item in results:
+
+            documents.append(
+                {
+                    "document_id": item.get("document_id"),
+                    "content": item.get(
+                        "content",
+                        "",
+                    ),
+                    "source": item.get(
+                        "source",
+                    ),
+                    "title": item.get(
+                        "title",
+                    ),
+                    "section": item.get(
+                        "section",
+                    ),
+                    "score": item.get(
+                        "score",
+                        0.0,
+                    ),
+                }
+            )
+
+        logger.info(
+            "Retrieved %s documents",
+            len(documents),
+        )
+
+        return documents
 
 
 class RAGBuilder:

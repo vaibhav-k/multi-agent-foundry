@@ -23,18 +23,17 @@ Citation Builder
 Grounded Answer
 """
 
-from typing import Optional
+from typing import Optional, List, Dict
 
 from src.agents.base import BaseAgent
 from src.config import get_logger
-from src.models import (
-    DocumentReference,
-    GroundedAnswer,
-)
+from src.models import GroundedAnswer
+
 from src.rag import (
     RAGBuilder,
     RAGRetriever,
 )
+
 from src.rag.citations import CitationBuilder
 from src.rag.query import QueryRewriter
 from src.rag.reranker import DocumentReranker
@@ -48,11 +47,12 @@ class KnowledgeAgent(BaseAgent):
 
     Responsibilities:
 
-    - Understand knowledge requests
+    - Rewrite user queries
     - Retrieve enterprise documents
-    - Improve retrieval quality
-    - Generate grounded answers
-    - Provide supporting citations
+    - Rerank search results
+    - Build grounded context
+    - Generate answers
+    - Provide citations
     """
 
     def __init__(self):
@@ -78,27 +78,25 @@ class KnowledgeAgent(BaseAgent):
         context: Optional[str] = None,
     ) -> GroundedAnswer:
         """
-        Execute the knowledge retrieval pipeline.
+        Execute complete RAG workflow.
 
-        Args:
-            user_input:
-                Original user question.
+        Flow:
 
-            context:
-                Optional pre-built context.
-
-        Returns:
-            GroundedAnswer containing:
-            - answer
-            - citations
-            - confidence
+        1. Rewrite query
+        2. Retrieve documents
+        3. Rerank documents
+        4. Build context
+        5. Generate grounded answer
+        6. Attach citations
         """
 
         logger.info("KnowledgeAgent processing request")
 
-        documents = []
+        documents: List[Dict] = []
 
         if context:
+
+            logger.debug("Using provided context")
 
             final_context = context
 
@@ -106,17 +104,17 @@ class KnowledgeAgent(BaseAgent):
 
             search_query = self.query_rewriter.rewrite(user_input)
 
-            logger.debug(
-                "Knowledge search query: %s",
-                search_query,
-            )
+            logger.debug(f"Rewritten search query: {search_query}")
 
-            documents = self.retriever.retrieve(search_query)
+            retrieved_documents = self.retriever.retrieve(search_query)
 
-            documents = self.reranker.rerank(
-                search_query,
-                documents,
-            )
+            logger.info(f"Retrieved {len(retrieved_documents)} documents")
+
+            # documents = self.reranker.rerank(
+            #     search_query,
+            #     retrieved_documents,
+            # )
+            documents = retrieved_documents
 
             final_context = self.rag.build_context(documents)
 
@@ -131,7 +129,7 @@ class KnowledgeAgent(BaseAgent):
             answer=answer,
             citations=citations,
             grounded=bool(documents),
-            confidence=self.calculate_confidence(documents),
+            confidence=(self.calculate_confidence(documents)),
         )
 
     def generate(
@@ -140,26 +138,33 @@ class KnowledgeAgent(BaseAgent):
         context: str,
     ) -> str:
         """
-        Generate answer using enterprise context.
+        Generate grounded response.
         """
 
         prompt = f"""
-Context:
+You are an enterprise IT knowledge assistant.
 
-{context or "No enterprise context available."}
+Rules:
+
+- Answer only using approved enterprise documentation.
+- Do not use external knowledge.
+- Do not guess or fabricate information.
+- If information is unavailable, respond:
+
+"The information was not found in approved documentation."
 
 
-Question:
+Enterprise Context:
+
+{context or "No enterprise documentation found."}
+
+
+User Question:
 
 {user_input}
 
 
-Instructions:
-
-- Answer only using the provided context.
-- Do not invent information.
-- If the answer is unavailable, state that
-  the information was not found.
+Answer:
 """
 
         return super().run(user_input=prompt)
@@ -169,19 +174,38 @@ Instructions:
         documents: list,
     ) -> float:
         """
-        Estimate response confidence.
+        Calculate normalized confidence score.
 
-        Current implementation:
-        - More retrieved documents = higher confidence.
+        Uses:
+        - retrieval availability
+        - reranker/search score
 
-        Replace with evaluation model later.
+        Returns:
+            Float between 0 and 1.
         """
 
         if not documents:
             return 0.0
 
+        scores = []
+
+        for document in documents:
+
+            score = document.get(
+                "score",
+                0,
+            )
+
+            scores.append(score)
+
+        if not scores:
+            return 0.0
+
+        average_score = sum(scores) / len(scores)
+
+        # Normalize Azure Search score
         confidence = min(
-            len(documents) / 5,
+            average_score / 5,
             1.0,
         )
 

@@ -1,44 +1,28 @@
 """
 RAG pipeline orchestration.
 
-Enterprise Retrieval-Augmented Generation pipeline.
-
-Ingestion Flow:
+Flow:
 
 Document
-    |
-Document Chunking
-    |
-Embedding Generation
-    |
-Azure AI Search Index
-    |
-Stored Knowledge Base
-
-
-Retrieval Flow:
-
-User Query
-    |
-Query Optimization
-    |
+   |
+Chunking
+   |
+Embedding
+   |
 Azure AI Search
-    |
-Retrieved Documents
-    |
-Context Builder
-    |
+   |
+Retrieval
+   |
 Knowledge Agent
-    |
-Grounded Response
 """
 
-from typing import Dict, List
+from typing import List
 
 from src.config import get_logger
 
 from src.rag.chunker import DocumentChunker
 from src.rag.embeddings import EmbeddingGenerator
+from src.rag.models import Document, DocumentChunk
 from src.rag.search import VectorSearch
 
 logger = get_logger(__name__)
@@ -46,16 +30,7 @@ logger = get_logger(__name__)
 
 class RAGPipeline:
     """
-    Enterprise Retrieval-Augmented Generation pipeline.
-
-    Responsible for:
-
-    - Document ingestion
-    - Chunk generation
-    - Embedding creation
-    - Search indexing
-    - Enterprise document retrieval
-    - Context construction
+    Enterprise Retrieval Augmented Generation pipeline.
     """
 
     def __init__(self):
@@ -66,170 +41,88 @@ class RAGPipeline:
 
         self.search = VectorSearch()
 
-    # ------------------------------------------------------------------
-    # Ingestion
-    # ------------------------------------------------------------------
-
     def ingest_document(
         self,
-        document: Dict[str, str],
+        document: Document,
     ):
         """
-        Process and store an enterprise document.
-
-        Steps:
-
-        1. Split document into chunks
-        2. Generate embeddings
-        3. Upload vectors to Azure AI Search
+        Process and index an enterprise document.
         """
 
-        logger.info("Starting document ingestion")
-
-        chunks = self.chunker.chunk_document(document)
-
         logger.info(
-            "Generated %s chunks",
-            len(chunks),
+            "Processing document %s",
+            document.document_id,
         )
+
+        chunks = self.chunker.chunk_documents([document])
 
         embedded_chunks = self.embeddings.embed_chunks(chunks)
 
-        result = self.search.upload_documents(embedded_chunks)
+        return self.search.upload_documents(embedded_chunks)
 
-        logger.info("Document ingestion completed")
+    def ingest_documents(
+        self,
+        documents: List[Document],
+    ):
+        """
+        Process multiple documents.
+        """
 
-        return result
+        results = []
 
-    # ------------------------------------------------------------------
-    # Retrieval
-    # ------------------------------------------------------------------
+        for document in documents:
+
+            results.append(self.ingest_document(document))
+
+        return results
 
     def retrieve(
         self,
         query: str,
-    ) -> List[Dict]:
+    ) -> List[dict]:
         """
-        Retrieve relevant enterprise documents.
-
-        Returns normalized search results
-        for downstream agents.
+        Retrieve relevant enterprise chunks.
         """
 
-        logger.info(
-            "Retrieving documents for query: %s",
-            query,
-        )
-
-        documents = self.search.search(query)
-
-        return [self.normalize_document(doc) for doc in documents]
+        return self.search.search(query)
 
     def retrieve_context(
         self,
         query: str,
     ) -> str:
         """
-        Retrieve documents and build LLM context.
+        Retrieve and format context.
         """
 
         documents = self.retrieve(query)
 
         return self.build_context(documents)
 
-    # ------------------------------------------------------------------
-    # Context Construction
-    # ------------------------------------------------------------------
-
     def build_context(
         self,
-        documents: List[Dict],
+        documents: List[dict],
     ) -> str:
         """
-        Convert retrieved documents into
-        grounded model context.
-
-        Includes metadata to improve
-        citation quality.
+        Convert retrieved chunks into
+        LLM context.
         """
 
-        if not documents:
-            return ""
-
-        context_blocks = []
+        context = []
 
         for document in documents:
 
             content = document.get("content")
 
-            if not content:
-                continue
+            source = document.get("source")
 
-            source = document.get(
-                "source",
-                "unknown",
-            )
+            if content:
 
-            section = document.get(
-                "section",
-                "",
-            )
-
-            block = f"""
+                context.append(f"""
 Source:
 {source}
 
-Section:
-{section}
-
 Content:
 {content}
-"""
+""")
 
-            context_blocks.append(block.strip())
-
-        return "\n\n---\n\n".join(context_blocks)
-
-    # ------------------------------------------------------------------
-    # Helpers
-    # ------------------------------------------------------------------
-
-    def normalize_document(
-        self,
-        document: Dict,
-    ) -> Dict:
-        """
-        Normalize Azure AI Search output.
-
-        Ensures downstream agents receive
-        a predictable structure.
-        """
-
-        return {
-            "document_id": document.get(
-                "id",
-                document.get("document_id"),
-            ),
-            "title": document.get(
-                "title",
-                "",
-            ),
-            "content": document.get(
-                "content",
-                "",
-            ),
-            "source": document.get(
-                "source",
-                document.get(
-                    "title",
-                    "unknown",
-                ),
-            ),
-            "section": document.get(
-                "section",
-            ),
-            "score": document.get(
-                "score",
-                0.0,
-            ),
-        }
+        return "\n\n".join(context)
