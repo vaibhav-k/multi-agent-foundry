@@ -10,19 +10,19 @@ Coordinates:
 using shared AgentState.
 """
 
+from __future__ import annotations
+
+import time
+
 from src.agents import (
     KnowledgeAgent,
     PlannerAgent,
     SafetyAgent,
 )
-
 from src.config import get_logger
-
 from src.models import AgentWorkflowResult
-
-from src.state.models import AgentState
-
 from src.orchestrator.state import StateManager
+from src.state.models import AgentState
 
 logger = get_logger(__name__)
 
@@ -58,13 +58,9 @@ class Orchestrator:
         safety_agent: SafetyAgent | None = None,
         state_manager: StateManager | None = None,
     ):
-
         self.planner = planner
-
         self.knowledge_agent = knowledge_agent if knowledge_agent else KnowledgeAgent()
-
         self.safety_agent = safety_agent if safety_agent else SafetyAgent()
-
         self.state_manager = state_manager if state_manager else StateManager()
 
         logger.info("Multi-agent orchestrator initialized")
@@ -75,71 +71,128 @@ class Orchestrator:
         conversation_id: str = "default",
     ) -> AgentWorkflowResult:
         """
-        Execute agent workflow.
-
-        Creates AgentState and passes it
-        through the agent lifecycle.
+        Execute complete agent workflow.
         """
 
-        logger.info("Starting workflow")
+        workflow_start = time.perf_counter()
+
+        logger.info(
+            "Starting workflow | conversation_id=%s",
+            conversation_id,
+        )
 
         state = self.state_manager.create(
             conversation_id=conversation_id,
             message=user_input,
         )
 
-        # -------------------------------------------------
-        # Step 1: Planner Agent
-        # -------------------------------------------------
+        self._run_planner(state, user_input)
+
+        self._run_knowledge(
+            state,
+            user_input,
+        )
+
+        self._run_safety(state)
+
+        self._build_response(state)
+
+        elapsed = time.perf_counter() - workflow_start
+
+        logger.info(
+            "Workflow completed | duration=%.2fs",
+            elapsed,
+        )
+
+        return self.to_workflow_result(state)
+
+    def _run_planner(
+        self,
+        state: AgentState,
+        user_input: str,
+    ) -> None:
+        """
+        Execute planner agent.
+        """
+
+        start = time.perf_counter()
 
         state.planner_decision = self.planner.plan(user_input)
 
-        logger.info("Planner completed")
+        logger.info(
+            "Planner completed | duration=%.2fs",
+            time.perf_counter() - start,
+        )
 
-        # -------------------------------------------------
-        # Step 2: Knowledge Agent
-        # -------------------------------------------------
+    def _run_knowledge(
+        self,
+        state: AgentState,
+        user_input: str,
+    ) -> None:
+        """
+        Execute knowledge retrieval and generation.
+        """
 
-        if state.planner_decision and state.planner_decision.requires_retrieval:
+        if not state.planner_decision:
+            return
 
-            state.knowledge_response = self.knowledge_agent.answer(
-                user_input=user_input,
-            )
+        if not state.planner_decision.requires_retrieval:
+            logger.info("Knowledge skipped | retrieval not required")
+            return
 
-            logger.info("Knowledge agent completed")
+        start = time.perf_counter()
 
-        # -------------------------------------------------
-        # Step 3: Safety Agent
-        # -------------------------------------------------
+        state.knowledge_response = self.knowledge_agent.answer(
+            user_input=user_input,
+        )
 
-        if state.knowledge_response:
+        logger.info(
+            "Knowledge completed | duration=%.2fs",
+            time.perf_counter() - start,
+        )
 
-            state.safety_result = self.safety_agent.review(state.knowledge_response)
+    def _run_safety(
+        self,
+        state: AgentState,
+    ) -> None:
+        """
+        Execute safety review.
+        """
 
-            state.safety_passed = state.safety_result.safe
+        if not state.knowledge_response:
+            return
 
-            logger.info("Safety review completed")
+        start = time.perf_counter()
 
-        # -------------------------------------------------
-        # Step 4: Final Response
-        # -------------------------------------------------
+        state.safety_result = self.safety_agent.review(state.knowledge_response)
+
+        state.safety_passed = state.safety_result.safe
+
+        logger.info(
+            "Safety completed | passed=%s | duration=%.2fs",
+            state.safety_passed,
+            time.perf_counter() - start,
+        )
+
+    def _build_response(
+        self,
+        state: AgentState,
+    ) -> None:
+        """
+        Construct final workflow response.
+        """
 
         if state.safety_passed:
-
             state.final_answer = state.knowledge_response
 
             state.response = state.knowledge_response.answer
 
-        else:
+            return
 
-            state.response = (
-                "The request could not be completed "
-                "because it did not pass safety validation."
-            )
-
-        logger.info("Workflow completed")
-
-        return self.to_workflow_result(state)
+        state.response = (
+            "The request could not be completed "
+            "because it did not pass safety validation."
+        )
 
     def to_workflow_result(
         self,
@@ -151,10 +204,10 @@ class Orchestrator:
 
         return AgentWorkflowResult(
             user_query=state.user_message,
-            planner_output=(state.planner_decision),
-            knowledge_output=(state.knowledge_response),
-            safety_output=(state.safety_result),
-            final_response=(state.final_answer),
+            planner_output=state.planner_decision,
+            knowledge_output=state.knowledge_response,
+            safety_output=state.safety_result,
+            final_response=state.final_answer,
             success=(state.safety_passed or state.final_answer is not None),
             metadata=state.metadata,
         )

@@ -107,9 +107,16 @@ class BaseAgent:
 
         final_prompt = "\n\n".join(prompt_parts)
 
-        response = self.client.responses.create(
-            model=self.settings.azure_openai_chat_deployment,
-            input=final_prompt,
-        )
+        from openai import PermissionDeniedError
+
+        try:
+            response = self.client.responses.create(
+                model=self.settings.azure_openai_chat_deployment,
+                input=final_prompt,
+            )
+        except PermissionDeniedError as e:
+            print("Status:", e.status_code)
+            print("Body:", e.response.text)
+            raise
 
         return response.output_text

@@ -2,9 +2,8 @@
 Configuration package.
 """
 
-from .settings import get_settings
-
 from .client import (
+    get_credential,
     get_project_client,
     get_openai_client,
     get_embedding_client,
@@ -12,9 +11,13 @@ from .client import (
     get_content_safety_client,
 )
 
-from .logging import get_logger
+from .settings import get_settings
+
+from .logging import configure_logging, get_logger
 
 __all__ = [
+    "configure_logging",
+    "get_credential",
     "get_settings",
     "get_project_client",
     "get_openai_client",

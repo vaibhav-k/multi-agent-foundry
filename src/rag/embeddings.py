@@ -1,106 +1,64 @@
 """
 Embedding generation module.
 
-Responsible for generating vector embeddings
-for document chunks.
+Generates vector embeddings using Azure AI Foundry.
 
 Flow:
 
-Document Chunk
-        |
-        v
-Embedding Model
-        |
-        v
-Chunk + Embedding Vector
+Chunk
+ |
+ v
+text-embedding-3-small
+ |
+ v
+Chunk + embedding
 """
 
 from typing import Dict, List
 
 from src.config import get_logger
 from src.config.client import get_embedding_client
+from src.config.settings import get_settings
 
 logger = get_logger(__name__)
 
 
 class EmbeddingGenerator:
     """
-    Generates embeddings for RAG documents.
-
-    Responsibilities:
-
-    - Generate vector embeddings
-    - Attach vectors to chunks
-    - Return Azure AI Search compatible data
+    Generates embeddings for document chunks.
     """
 
-    def __init__(
-        self,
-        client=None,
-        deployment_name: str | None = None,
-    ):
-        """
-        Initialize embedding client.
+    def __init__(self):
+        self.client = get_embedding_client()
 
-        Dependency injection is supported
-        for testing.
-        """
+        settings = get_settings()
 
-        self.client = client if client else get_embedding_client()
-
-        self.deployment_name = deployment_name
+        self.model = settings.azure_openai_embedding_deployment
 
     def embed_text(
         self,
         text: str,
     ) -> List[float]:
         """
-        Generate embedding for text.
+        Generate embedding vector.
         """
 
-        logger.debug("Generating embedding")
-
-        response = self.client.embeddings.create(
-            model=self.deployment_name,
-            input=text,
-        )
+        response = self.client.embed(input=[text])
 
         return response.data[0].embedding
 
     def embed_chunks(
         self,
-        chunks: List[Dict[str, str]],
+        chunks: List[Dict],
     ) -> List[Dict]:
         """
-        Generate embeddings for document chunks.
-
-        Input:
-
-        [
-            {
-                "chunk_id": "vpn-1",
-                "source": "vpn.md",
-                "content": "..."
-            }
-        ]
-
-
-        Output:
-
-        [
-            {
-                "chunk_id": "vpn-1",
-                "source": "vpn.md",
-                "content": "...",
-                "embedding": [...]
-            }
-        ]
+        Add embeddings to chunks.
         """
 
-        embedded_chunks = []
+        results = []
 
         logger.info(
-            "Embedding %s chunks",
+            "Generating embeddings for %s chunks",
             len(chunks),
         )
 
@@ -108,16 +66,11 @@ class EmbeddingGenerator:
 
             embedding = self.embed_text(chunk["content"])
 
-            embedded_chunk = {
-                **chunk,
-                "embedding": embedding,
-            }
+            results.append(
+                {
+                    **chunk,
+                    "embedding": embedding,
+                }
+            )
 
-            embedded_chunks.append(embedded_chunk)
-
-        logger.info(
-            "Generated embeddings for %s chunks",
-            len(embedded_chunks),
-        )
-
-        return embedded_chunks
+        return results

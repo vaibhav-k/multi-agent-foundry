@@ -127,16 +127,20 @@ class VectorSearch:
 
     def upload_documents(
         self,
-        documents: List[dict],
+        documents: list[dict],
     ):
-        """
-        Upload documents into Azure AI Search index.
-        """
 
-        logger.info(f"Uploading {len(documents)} documents")
+        normalized = []
 
-        result = self.client.upload_documents(documents)
+        for doc in documents:
 
-        logger.info("Upload completed")
+            normalized.append(
+                {
+                    "chunk_id": doc["chunk_id"],
+                    "content": doc["content"],
+                    "source": doc.get("source", ""),
+                    "embedding": doc["embedding"],
+                }
+            )
 
-        return result
+        return self.client.upload_documents(documents=normalized)

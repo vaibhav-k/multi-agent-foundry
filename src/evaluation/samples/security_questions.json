@@ -1,0 +1,67 @@
+[
+  {
+    "question": "What are the requirements for creating a corporate password?",
+    "expected_source": "password_policy.md",
+    "category": "identity_security"
+  },
+  {
+    "question": "How often do I need to change my corporate password?",
+    "expected_source": "password_policy.md",
+    "category": "identity_security"
+  },
+  {
+    "question": "I forgot my password. How can I reset it?",
+    "expected_source": "password_policy.md",
+    "category": "identity_security"
+  },
+  {
+    "question": "How do I enroll my account in multi-factor authentication?",
+    "expected_source": "mfa_setup.md",
+    "category": "authentication"
+  },
+  {
+    "question": "My phone was lost and I cannot complete MFA verification. What should I do?",
+    "expected_source": "mfa_setup.md",
+    "category": "authentication"
+  },
+  {
+    "question": "How do I configure company email on my laptop?",
+    "expected_source": "email_setup.md",
+    "category": "email_security"
+  },
+  {
+    "question": "Can I access company email from my mobile device?",
+    "expected_source": "email_setup.md",
+    "category": "email_security"
+  },
+  {
+    "question": "How do I request installation of new software?",
+    "expected_source": "software_installation.md",
+    "category": "endpoint_security"
+  },
+  {
+    "question": "Can employees install applications downloaded from the internet?",
+    "expected_source": "software_installation.md",
+    "category": "endpoint_security"
+  },
+  {
+    "question": "How do I report a suspicious email?",
+    "expected_source": "incident_reporting.md",
+    "category": "security_incident"
+  },
+  {
+    "question": "What should I do if my company laptop is lost?",
+    "expected_source": "incident_reporting.md",
+    "category": "security_incident"
+  },
+  {
+    "question": "How do I request access to an internal business application?",
+    "expected_source": "access_management.md",
+    "category": "access_control"
+  },
+  {
+    "question": "Who approves access requests for enterprise applications?",
+    "expected_source": "access_management.md",
+    "category": "access_control"
+  }
+]

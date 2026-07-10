@@ -57,6 +57,11 @@ class Settings(BaseSettings):
         alias="AZURE_OPENAI_EMBEDDING_DEPLOYMENT",
     )
 
+    azure_inference_endpoint: str
+    azure_inference_key: str
+
+    azure_openai_embedding_deployment: str = "text-embedding-3-small"
+
     # ==========================================================
     # Azure AI Search
     # ==========================================================

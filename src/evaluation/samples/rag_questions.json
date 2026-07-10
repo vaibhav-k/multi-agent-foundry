@@ -1,10 +1,37 @@
 [
   {
-    "question": "How do I configure the company VPN?",
-    "expected_source": "vpn-guide.md"
+    "question": "How do I connect to the company VPN?",
+    "expected_source": "vpn.md",
+    "category": "network"
   },
   {
-    "question": "How do I install the VPN client?",
-    "expected_source": "vpn_setup.md"
+    "question": "What are the password requirements?",
+    "expected_source": "password_policy.md",
+    "category": "security"
+  },
+  {
+    "question": "How do I reset my MFA device?",
+    "expected_source": "mfa_setup.md",
+    "category": "authentication"
+  },
+  {
+    "question": "How do I configure Outlook?",
+    "expected_source": "email_setup.md",
+    "category": "email"
+  },
+  {
+    "question": "Can I install software downloaded from the internet?",
+    "expected_source": "software_installation.md",
+    "category": "endpoint_security"
+  },
+  {
+    "question": "How do I report a suspicious email?",
+    "expected_source": "incident_reporting.md",
+    "category": "security_incident"
+  },
+  {
+    "question": "How do I request access to a business application?",
+    "expected_source": "access_management.md",
+    "category": "access_control"
   }
 ]

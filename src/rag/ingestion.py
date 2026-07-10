@@ -42,12 +42,46 @@ class DocumentIngestion:
         Execute ingestion workflow.
         """
 
+        logger.info("Starting document ingestion")
+
         documents = self.loader.load_documents()
+
+        logger.info(
+            "Loaded %s documents",
+            len(documents),
+        )
 
         chunks = self.chunker.chunk_documents(documents)
 
+        logger.info(
+            "Created %s chunks",
+            len(chunks),
+        )
+
         embedded_chunks = self.embedding.embed_chunks(chunks)
+
+        logger.info("Generated embeddings")
 
         result = self.search.upload_documents(embedded_chunks)
 
+        logger.info("Uploaded documents to search index")
+
         return result
+
+
+def main():
+    """
+    CLI entry point.
+    """
+
+    ingestion = DocumentIngestion()
+
+    result = ingestion.run()
+
+    print("\n========== INGESTION COMPLETE ==========\n")
+
+    print(result)
+
+
+if __name__ == "__main__":
+    main()
