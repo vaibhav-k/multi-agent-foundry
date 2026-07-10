@@ -11,9 +11,8 @@ from .client import (
     get_content_safety_client,
 )
 
-from .settings import get_settings
-
 from .logging import configure_logging, get_logger
+from .settings import get_settings
 
 __all__ = [
     "configure_logging",
