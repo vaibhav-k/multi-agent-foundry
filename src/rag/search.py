@@ -102,10 +102,7 @@ class VectorSearch:
             return None
 
         document_id = (
-            result.get("document_id")
-            or result.get("chunk_id")
-            or result.get("id")
-            or "unknown"
+            result.get("document_id") or result.get("chunk_id") or result.get("id") or "unknown"
         )
 
         source = result.get("source") or result.get("file_name")

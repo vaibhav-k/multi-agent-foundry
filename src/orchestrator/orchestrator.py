@@ -190,8 +190,7 @@ class Orchestrator:
             return
 
         state.response = (
-            "The request could not be completed "
-            "because it did not pass safety validation."
+            "The request could not be completed " "because it did not pass safety validation."
         )
 
     def to_workflow_result(

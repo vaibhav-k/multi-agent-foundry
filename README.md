@@ -257,6 +257,14 @@ Detailed architecture and module documentation:
 * [Evaluation](docs/evaluation.md)
 * [State and Utilities](docs/state-and-utils.md)
 
+## Architecture Diagrams
+
+Visual system documentation:
+
+- [System Architecture](docs/architecture/system-architecture.md)
+- [Agent Flow](docs/architecture/agent-flow.md)
+- [RAG Pipeline](docs/architecture/rag-pipeline.md)
+
 ---
 
 # 7. Installation

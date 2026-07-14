@@ -24,6 +24,4 @@ class ChatResponse(BaseModel):
 
     answer: str
 
-    sources: list[str] = Field(
-        default_factory=list, description="Supporting knowledge sources."
-    )
+    sources: list[str] = Field(default_factory=list, description="Supporting knowledge sources.")

@@ -1,0 +1,33 @@
+[project]
+name = "multi-agent-foundry"
+version = "0.1.0"
+description = "A modular Multi-Agent AI framework using RAG, Azure OpenAI, FastAPI, and evaluation pipelines."
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = [
+    "tests"
+]
+
+pythonpath = [
+    "."
+]
+
+[tool.coverage.run]
+source = [
+    "src"
+]
+
+omit = [
+    "*/tests/*"
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+
+[tool.ruff]
+line-length = 100
+
+[tool.black]
+line-length = 100

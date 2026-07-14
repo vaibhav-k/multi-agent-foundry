@@ -16,9 +16,7 @@ def azure_configured() -> bool:
     """Check whether Azure AI Foundry configuration exists."""
     try:
         settings = get_settings()
-        return bool(
-            settings.azure_ai_project_endpoint and settings.azure_openai_chat_deployment
-        )
+        return bool(settings.azure_ai_project_endpoint and settings.azure_openai_chat_deployment)
     except Exception:
         return False
 

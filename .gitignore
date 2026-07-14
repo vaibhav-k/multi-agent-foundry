@@ -60,3 +60,11 @@ dist/
 # Misc
 
 *.sqlite
+
+# Coverage
+htmlcov/
+.coveragerc
+
+# Python tooling
+.mypy_cache/
+.ruff_cache/

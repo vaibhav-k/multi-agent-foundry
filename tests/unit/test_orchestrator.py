@@ -68,10 +68,7 @@ def test_orchestrator_calls_planner():
 
     assert result.final_response is not None
 
-    assert (
-        result.final_response.answer
-        == "Follow the VPN setup guide to configure access."
-    )
+    assert result.final_response.answer == "Follow the VPN setup guide to configure access."
 
     planner.plan.assert_called_once_with("How do I connect VPN?")
 

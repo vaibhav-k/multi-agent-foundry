@@ -23,10 +23,10 @@ from azure.search.documents import SearchClient
 
 from src.config.settings import get_settings
 
-
 # =========================================================
 # Azure Identity
 # =========================================================
+
 
 @lru_cache
 def get_credential() -> DefaultAzureCredential:
@@ -36,6 +36,7 @@ def get_credential() -> DefaultAzureCredential:
 # =========================================================
 # Azure AI Foundry Project Client
 # =========================================================
+
 
 @lru_cache
 def get_project_client() -> AIProjectClient:
@@ -50,6 +51,7 @@ def get_project_client() -> AIProjectClient:
 # =========================================================
 # Azure OpenAI Responses Client
 # =========================================================
+
 
 @lru_cache
 def get_openai_client() -> OpenAI:
@@ -68,10 +70,7 @@ def get_openai_client() -> OpenAI:
     settings = get_settings()
 
     return OpenAI(
-        base_url=(
-            f"{settings.azure_ai_project_endpoint}"
-            "/openai/v1/"
-        ),
+        base_url=(f"{settings.azure_ai_project_endpoint}" "/openai/v1/"),
         api_key=settings.azure_inference_key,
     )
 
@@ -79,6 +78,7 @@ def get_openai_client() -> OpenAI:
 # =========================================================
 # Azure AI Foundry Embeddings Client
 # =========================================================
+
 
 @lru_cache
 def get_embedding_client() -> EmbeddingsClient:
@@ -94,9 +94,7 @@ def get_embedding_client() -> EmbeddingsClient:
 
     return EmbeddingsClient(
         endpoint=settings.azure_inference_endpoint,
-        credential=AzureKeyCredential(
-            settings.azure_inference_key
-        ),
+        credential=AzureKeyCredential(settings.azure_inference_key),
         model=settings.azure_openai_embedding_deployment,
     )
 
@@ -105,6 +103,7 @@ def get_embedding_client() -> EmbeddingsClient:
 # Azure AI Search
 # =========================================================
 
+
 @lru_cache
 def get_search_client() -> SearchClient:
     settings = get_settings()
@@ -112,9 +111,7 @@ def get_search_client() -> SearchClient:
     return SearchClient(
         endpoint=settings.azure_search_endpoint,
         index_name=settings.azure_search_index,
-        credential=AzureKeyCredential(
-            settings.azure_search_key
-        ),
+        credential=AzureKeyCredential(settings.azure_search_key),
     )
 
 
@@ -122,13 +119,12 @@ def get_search_client() -> SearchClient:
 # Azure AI Content Safety
 # =========================================================
 
+
 @lru_cache
 def get_content_safety_client() -> ContentSafetyClient:
     settings = get_settings()
 
     return ContentSafetyClient(
         endpoint=settings.azure_content_safety_endpoint,
-        credential=AzureKeyCredential(
-            settings.azure_content_safety_key
-        ),
+        credential=AzureKeyCredential(settings.azure_content_safety_key),
     )

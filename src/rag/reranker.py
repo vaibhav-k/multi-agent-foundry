@@ -153,9 +153,7 @@ class DocumentReranker:
         if any(term in category for term in query_terms):
             metadata_score += 0.5
 
-        final_score = (
-            (search_score * 0.5) + (keyword_score * 0.3) + (metadata_score * 0.2)
-        )
+        final_score = (search_score * 0.5) + (keyword_score * 0.3) + (metadata_score * 0.2)
 
         return round(
             final_score,
