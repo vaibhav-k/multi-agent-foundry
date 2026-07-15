@@ -105,9 +105,7 @@ class Orchestrator:
             state,
         )
 
-        logger.info(
-            f"Workflow completed | duration={time.perf_counter() - workflow_start:.2f}s"
-        )
+        logger.info(f"Workflow completed | duration={time.perf_counter() - workflow_start:.2f}s")
 
         return self.to_workflow_result(state)
 
@@ -154,7 +152,6 @@ class Orchestrator:
         )
 
         logger.info(f"Knowledge completed | duration={time.perf_counter() - start:.2f}s")
-
 
     def _run_safety(
         self,
