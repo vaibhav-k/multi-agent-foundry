@@ -77,38 +77,36 @@ class Orchestrator:
         user_input: str,
         conversation_id: str = "default",
     ) -> AgentWorkflowResult:
-        """
-        Execute complete agent workflow.
-        """
 
         workflow_start = time.perf_counter()
 
-        logger.info(
-            "Starting workflow | conversation_id=%s",
-            conversation_id,
-        )
+        logger.info(f"Starting workflow | conversation_id={conversation_id}")
 
         state = self.state_manager.create(
             conversation_id=conversation_id,
             message=user_input,
         )
 
-        self._run_planner(state, user_input)
+        self._run_planner(
+            state,
+            user_input,
+        )
 
         self._run_knowledge(
             state,
             user_input,
         )
 
-        self._run_safety(state)
+        self._run_safety(
+            state,
+        )
 
-        self._run_response(state)
-
-        elapsed = time.perf_counter() - workflow_start
+        self._run_response(
+            state,
+        )
 
         logger.info(
-            "Workflow completed | duration=%.2fs",
-            elapsed,
+            f"Workflow completed | duration={time.perf_counter() - workflow_start:.2f}s"
         )
 
         return self.to_workflow_result(state)
@@ -126,10 +124,7 @@ class Orchestrator:
 
         state.planner_decision = self.planner.plan(user_input)
 
-        logger.info(
-            "Planner completed | duration=%.2fs",
-            time.perf_counter() - start,
-        )
+        logger.info(f"Planner completed | duration={time.perf_counter() - start:.2f}s")
 
     def _run_knowledge(
         self,
@@ -137,14 +132,19 @@ class Orchestrator:
         user_input: str,
     ) -> None:
         """
-        Execute knowledge retrieval and generation.
+        Execute KnowledgeAgent only when required.
         """
 
-        if not state.planner_decision:
+        plan = state.planner_decision
+
+        if not plan:
+            logger.warning("Knowledge skipped | no planner decision")
             return
 
-        if not state.planner_decision.requires_retrieval:
+        if not plan.requires_retrieval:
+
             logger.info("Knowledge skipped | retrieval not required")
+
             return
 
         start = time.perf_counter()
@@ -153,20 +153,34 @@ class Orchestrator:
             user_input=user_input,
         )
 
-        logger.info(
-            "Knowledge completed | duration=%.2fs",
-            time.perf_counter() - start,
-        )
+        logger.info(f"Knowledge completed | duration={time.perf_counter() - start:.2f}s")
+
 
     def _run_safety(
         self,
         state: AgentState,
     ) -> None:
         """
-        Execute safety review.
+        Execute SafetyAgent based on planner decision.
         """
 
+        plan = state.planner_decision
+
+        if not plan:
+            return
+
+        if not plan.requires_safety_review:
+
+            logger.info("Safety skipped | not required")
+
+            state.safety_passed = True
+
+            return
+
         if not state.knowledge_response:
+
+            logger.warning("Safety skipped | no response available")
+
             return
 
         start = time.perf_counter()
@@ -176,9 +190,7 @@ class Orchestrator:
         state.safety_passed = state.safety_result.safe
 
         logger.info(
-            "Safety completed | passed=%s | duration=%.2fs",
-            state.safety_passed,
-            time.perf_counter() - start,
+            f"Safety completed | passed={state.safety_passed} | duration={time.perf_counter() - start:.2f}s"
         )
 
     def _run_response(
@@ -204,7 +216,7 @@ class Orchestrator:
                 "The request could not be completed because it did not pass safety validation."
             )
 
-        logger.info(f"Response completed | duration={time.perf_counter() - start}s")
+        logger.info(f"Response completed | duration={time.perf_counter() - start:.2f}s")
 
     def to_workflow_result(
         self,
