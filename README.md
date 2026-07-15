@@ -184,16 +184,14 @@ src/
 Python:
 
 ```
-
 Python 3.12+
-
-````
+```
 
 Install dependencies:
 
 ```bash
 pip install -r requirements.txt
-````
+```
 
 or using uv:
 
@@ -207,7 +205,7 @@ uv sync
 
 ## CLI Mode
 
-Run the assistant:
+Run the smoke-test:
 
 ```bash
 python -m src.main
@@ -371,10 +369,6 @@ Environment variables:
 
 LOG_LEVEL=INFO
 
-# ==========================================================
-# Azure AI Foundry Project
-# ==========================================================
-
 AZURE_AI_PROJECT_ENDPOINT=...
 
 AZURE_OPENAI_CHAT_DEPLOYMENT=...
@@ -390,22 +384,6 @@ AZURE_SEARCH_INDEX=...
 
 ---
 
-# Development Roadmap
-
-## Completed
-
-* [x] Multi-agent architecture
-* [x] Planner structured workflow
-* [x] RAG retrieval pipeline
-* [x] Query rewriting
-* [x] Document reranking
-* [x] Safety validation
-* [x] FastAPI API layer
-* [x] Health endpoint
-* [x] Automated tests
-
----
-
 # Git Workflow
 
 Run tests before committing:
@@ -418,7 +396,7 @@ Commit example:
 
 ```bash
 git add .
-git commit -m "add FastAPI API layer and improve multi-agent documentation"
+git commit -m "..."
 ```
 
 ---
@@ -426,5 +404,3 @@ git commit -m "add FastAPI API layer and improve multi-agent documentation"
 # License
 
 Internal enterprise application prototype.
-
-````

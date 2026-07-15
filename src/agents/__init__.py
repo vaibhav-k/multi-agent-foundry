@@ -6,8 +6,9 @@ Enterprise IT Knowledge Assistant.
 
 Agents:
 - BaseAgent
-- PlannerAgent
 - KnowledgeAgent
+- PlannerAgent
+- ResponseAgent
 - SafetyAgent
 """
 

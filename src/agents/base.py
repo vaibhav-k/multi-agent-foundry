@@ -1,11 +1,14 @@
 """
-Base agent implementation.
+Base implementation for AI agents.
 
-Provides shared functionality for all agents:
-- Prompt loading
-- Azure AI Foundry model invocation
-- Logging
-- Standard response handling
+This module provides the common functionality shared by all agents in the
+project, including:
+
+- Loading system prompts from disk.
+- Initializing the Azure AI Foundry client.
+- Executing model inference.
+- Logging agent activity.
+- Returning generated responses.
 """
 
 from pathlib import Path
@@ -20,11 +23,17 @@ class BaseAgent:
     """
     Base class for all AI agents.
 
-    All agents:
-    - Use Azure AI Foundry models
-    - Have a system prompt
-    - Receive user input
-    - Return generated responses
+    The base agent encapsulates the common workflow for interacting with
+    Azure AI Foundry language models. Concrete agent implementations inherit
+    from this class and provide a different system prompt while reusing the
+    shared inference pipeline.
+
+    Attributes:
+        name: Human-readable name of the agent.
+        prompt_file: Filename of the system prompt stored in ``src/prompts``.
+        settings: Application configuration loaded from the project's settings.
+        client: Azure AI Foundry OpenAI client.
+        system_prompt: Contents of the loaded system prompt.
     """
 
     def __init__(
@@ -32,6 +41,13 @@ class BaseAgent:
         name: str,
         prompt_file: str,
     ):
+        """
+        Initialize the agent.
+
+        Args:
+            name: Human-readable identifier used for logging.
+            prompt_file: Name of the prompt file located in ``src/prompts``.
+        """
         self.name = name
         self.prompt_file = prompt_file
 
@@ -47,7 +63,16 @@ class BaseAgent:
         prompt_file: str,
     ) -> str:
         """
-        Load agent system prompt from file.
+        Load the system prompt from disk.
+
+        Args:
+            prompt_file: Name of the prompt file located in ``src/prompts``.
+
+        Returns:
+            The prompt contents as a UTF-8 decoded string.
+
+        Raises:
+            FileNotFoundError: If the specified prompt file does not exist.
         """
 
         prompt_path = Path("src") / "prompts" / prompt_file
@@ -63,17 +88,23 @@ class BaseAgent:
         context: Optional[str] = None,
     ) -> str:
         """
-        Execute the agent.
+        Generate a response for a user request.
+
+        The final prompt is constructed from the agent's system prompt, optional
+        contextual information, and the user's request before being sent to the
+        configured Azure AI Foundry model.
 
         Args:
-            user_input:
-                User request.
+            user_input: The user's request or instruction.
+            context: Optional contextual information supplied by other agents or
+                     previous processing stages.
 
-            context:
-                Optional context from other agents.
+        Returns: The generated response text from the language model.
 
-        Returns:
-            Generated response text.
+        Raises:
+            openai.PermissionDeniedError: If the configured credentials do not
+                                          have permission to access the requested
+                                          Azure AI Foundry deployment.
         """
 
         logger.info(f"{self.name} processing request")

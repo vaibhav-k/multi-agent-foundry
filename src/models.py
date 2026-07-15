@@ -1,15 +1,20 @@
 """
-Shared data models used throughout the application.
+Shared data models for the multi-agent knowledge assistant.
 
-Contains:
-- Agent contracts
-- Conversation models
-- Retrieval models
-- RAG response models
-- Safety models
-- Planner models
-- Evaluation models
-- Workflow state models
+This module defines the strongly typed contracts exchanged between agents and
+other application components. These models provide a consistent interface for
+conversation management, retrieval, planning, safety validation, response
+generation, evaluation, and workflow orchestration.
+
+Model categories:
+    - Agent contracts
+    - Conversation models
+    - Retrieval models
+    - Retrieval-Augmented Generation (RAG) models
+    - Planner models
+    - Safety models
+    - Evaluation models
+    - Workflow state models
 """
 
 from enum import Enum
@@ -23,7 +28,12 @@ from pydantic import BaseModel, Field
 
 
 class AgentType(str, Enum):
-    """Supported agent types."""
+    """
+    Enumeration of supported agent implementations.
+
+    Used throughout the application to identify the origin of an agent
+    response and to simplify logging, routing, and observability.
+    """
 
     PLANNER = "planner"
     KNOWLEDGE = "knowledge"
@@ -32,7 +42,12 @@ class AgentType(str, Enum):
 
 
 class MessageRole(str, Enum):
-    """Conversation roles."""
+    """
+    Supported conversation message roles.
+
+    Matches the standard chat-completion message roles used by modern
+    large language model APIs.
+    """
 
     SYSTEM = "system"
     USER = "user"
@@ -46,7 +61,14 @@ class MessageRole(str, Enum):
 
 class ChatMessage(BaseModel):
     """
-    Represents a single chat message.
+    Represents a single message within a conversation.
+
+    Attributes:
+        role:
+            Role of the message sender.
+
+        content:
+            Natural language message content.
     """
 
     role: MessageRole
@@ -56,7 +78,10 @@ class ChatMessage(BaseModel):
 
 class AgentRequest(BaseModel):
     """
-    Request sent to an agent.
+    Request passed to an agent.
+
+    Encapsulates the user's query together with the available conversation
+    history, allowing agents to perform context-aware reasoning.
     """
 
     user_query: str
@@ -71,9 +96,16 @@ class AgentRequest(BaseModel):
 
 class DocumentReference(BaseModel):
     """
-    Citation reference for generated responses.
+    Reference to a supporting enterprise document.
 
-    Represents supporting enterprise documentation.
+    Citation metadata is attached to grounded responses so downstream
+    consumers can display or audit the evidence used to generate an answer.
+
+    Attributes:
+        document_id: Unique document identifier.
+        name: Human-readable document title.
+        section: Optional section or heading within the document.
+        score: Retrieval relevance score, when available.
     """
 
     document_id: Optional[str] = None
@@ -87,9 +119,11 @@ class DocumentReference(BaseModel):
 
 class AgentResponse(BaseModel):
     """
-    Standard response returned by every agent.
+    Standard response returned by an agent.
 
-    All agents should return a consistent structure.
+    Provides a consistent response contract across all agent
+    implementations, including generated content, confidence,
+    supporting sources, and optional metadata.
     """
 
     agent: AgentType
@@ -112,7 +146,10 @@ class AgentResponse(BaseModel):
 
 class RetrievedDocument(BaseModel):
     """
-    Document returned from Azure AI Search.
+    Document retrieved from the enterprise search index.
+
+    Represents a document returned during retrieval before it is supplied
+    to the language model for grounded answer generation.
     """
 
     document_id: str
@@ -132,7 +169,8 @@ class RetrievalResult(BaseModel):
     """
     Collection of retrieved documents.
 
-    Used by the Knowledge Agent.
+    Groups the original search query together with the ranked documents
+    returned by the retrieval pipeline.
     """
 
     query: str
@@ -147,7 +185,10 @@ class RetrievalResult(BaseModel):
 
 class RAGContext(BaseModel):
     """
-    Context provided to the answer generation step.
+    Context supplied to the answer generation stage.
+
+    Combines the user's query with the retrieved documents that provide
+    grounding for language model inference.
     """
 
     query: str
@@ -157,9 +198,17 @@ class RAGContext(BaseModel):
 
 class GroundedAnswer(BaseModel):
     """
-    Final RAG-generated answer.
+    Grounded response produced by the knowledge agent.
 
-    Ensures answers are tied to enterprise sources.
+    The generated answer is expected to be supported by one or more
+    enterprise documents referenced through structured citations.
+
+    Attributes:
+        answer: Generated natural language response.
+        citations: Supporting document references used during generation.
+        grounded: Indicates whether the response is supported by
+                  retrieved enterprise knowledge.
+        confidence: Estimated confidence score for the generated answer.
     """
 
     answer: str
@@ -178,7 +227,10 @@ class GroundedAnswer(BaseModel):
 
 class SafetyCheckResult(BaseModel):
     """
-    Result returned by the Safety Agent.
+    Result of the safety validation stage.
+
+    Indicates whether a generated response satisfies the application's
+    safety and compliance requirements before being returned to the user.
     """
 
     safe: bool
@@ -195,7 +247,11 @@ class SafetyCheckResult(BaseModel):
 
 class PlannerDecision(BaseModel):
     """
-    Planner output describing the execution plan.
+    Execution plan produced by the planner agent.
+
+    Describes how the user request should be processed, including whether
+    document retrieval or safety validation is required and the sequence
+    of planned execution steps.
     """
 
     requires_retrieval: bool = False
@@ -214,9 +270,10 @@ class PlannerDecision(BaseModel):
 
 class AgentState(BaseModel):
     """
-    Runtime state passed between agents.
+    Shared runtime state for agent execution.
 
-    Tracks the complete execution lifecycle.
+    Stores information exchanged between agents during workflow execution
+    and tracks the current state of the conversation pipeline.
     """
 
     conversation_id: str
@@ -239,9 +296,10 @@ class AgentState(BaseModel):
 
 class EvaluationResult(BaseModel):
     """
-    Used for RAG evaluation.
+    Evaluation metrics for Retrieval-Augmented Generation (RAG).
 
-    Measures retrieval and answer quality.
+    Captures retrieval quality, answer quality, citation quality, and
+    grounding metrics for offline benchmarking and regression testing.
     """
 
     question: str
@@ -270,20 +328,16 @@ class EvaluationResult(BaseModel):
 
 class AgentWorkflowResult(BaseModel):
     """
-    Complete execution result from the multi-agent workflow.
+    Complete result of a multi-agent workflow execution.
 
-    Stores intermediate outputs for:
+    Stores the intermediate outputs generated by each agent together with
+    the final response returned to the user.
 
-    - Planner
-    - Knowledge
-    - Safety
-    - Final response
-
-    Useful for:
-
-    - Debugging
-    - Evaluation
-    - Observability
+    This model is primarily intended for:
+        - Workflow debugging
+        - Offline evaluation
+        - Observability and telemetry
+        - Performance analysis
     """
 
     user_query: str
