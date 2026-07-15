@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends
 
 from src.api.dependencies import get_orchestrator
 from src.api.schemas import ChatRequest, ChatResponse
-from src.orchestrator.orchestrator import AgentOrchestrator
+from src.orchestrator.orchestrator import Orchestrator
 
 router = APIRouter()
 
@@ -28,31 +28,31 @@ def health_check():
 )
 def chat(
     request: ChatRequest,
-    orchestrator: AgentOrchestrator = Depends(get_orchestrator),
+    orchestrator: Orchestrator = Depends(get_orchestrator),
 ):
     """
     Process a user question.
-
-    Flow:
-
-    User
-      |
-    Planner Agent
-      |
-    Knowledge Agent
-      |
-    Safety Agent
-      |
-    Response
     """
 
     result = orchestrator.run(
+        user_input=request.message,
         conversation_id=request.conversation_id,
-        message=request.message,
     )
+
+    knowledge = result.knowledge_output
+    safety = result.safety_output
+    final = result.final_response
+
+    sources = []
+
+    if knowledge and knowledge.citations:
+        sources = [citation.document_id for citation in knowledge.citations]
 
     return ChatResponse(
         conversation_id=request.conversation_id,
-        answer=result.answer,
-        sources=result.sources,
+        answer=(final.answer if final else "No response generated."),
+        sources=sources,
+        confidence=(knowledge.confidence if knowledge else 0.0),
+        grounded=(knowledge.grounded if knowledge else False),
+        safe=(safety.safe if safety else False),
     )
