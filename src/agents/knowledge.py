@@ -117,6 +117,8 @@ class KnowledgeAgent(BaseAgent):
 
             final_context = self.rag.build_context(documents)
 
+            logger.debug(f"Generated RAG context:\n{final_context}")
+
         answer = self.generate(
             user_input,
             final_context,

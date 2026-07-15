@@ -68,3 +68,20 @@ def test_planner_initialization():
     assert agent.name == "PlannerAgent"
 
     assert agent.prompt_file == "planner.txt"
+
+
+def test_planner_requires_retrieval_for_it_questions():
+
+    planner = PlannerAgent()
+
+    result = planner._parse_plan("""
+        {
+            "intent": "MFA configuration",
+            "requires_retrieval": false,
+            "requires_safety_review": false,
+            "execution_steps": []
+        }
+        """)
+
+    assert result.requires_retrieval is True
+    assert result.requires_safety_review is True

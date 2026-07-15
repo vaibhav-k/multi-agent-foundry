@@ -56,37 +56,14 @@ class PlannerAgent(BaseAgent):
         user_input: str,
     ) -> PlannerDecision:
         """
-        Create execution plan from user request.
+        Decide workflow execution.
         """
 
         logger.info("PlannerAgent analyzing request")
 
-        prompt = f"""
-Analyze the user request.
+        response = super().run(user_input=user_input)
 
-Return ONLY valid JSON.
-
-Schema:
-
-{{
-    "intent": "short intent description",
-    "requires_retrieval": true,
-    "requires_safety_review": true,
-    "execution_steps": [
-        "step_name"
-    ]
-}}
-
-User request:
-
-{user_input}
-"""
-
-        response = self.run(
-            user_input=prompt,
-        )
-
-        logger.debug(f"Planner raw output: {response}")
+        logger.debug(f"Planner output: {response}")
 
         return self._parse_plan(response)
 
@@ -94,24 +71,44 @@ User request:
         self,
         response: str,
     ) -> PlannerDecision:
-        """
-        Convert LLM response into PlannerDecision.
-        """
 
         try:
+            json_text = self._extract_json(response)
 
-            json_payload = self._extract_json(response)
+            data = json.loads(json_text)
 
-            return PlannerDecision.model_validate(json.loads(json_payload))
+            return PlannerDecision(
+                intent=data.get(
+                    "intent",
+                    "enterprise knowledge request",
+                ),
+                # Knowledge assistant always grounds answers
+                requires_retrieval=True,
+                # Safety always runs
+                requires_safety_review=True,
+                execution_steps=[
+                    "retrieve_documents",
+                    "generate_grounded_answer",
+                    "validate_safety",
+                    "generate_response",
+                ],
+            )
 
-        except (
-            json.JSONDecodeError,
-            ValueError,
-        ) as exc:
+        except Exception:
 
-            logger.warning(f"Planner parsing failed: {exc}")
+            logger.warning("Planner parsing failed. " "Using safe default workflow.")
 
-            return DEFAULT_PLAN.model_copy()
+            return PlannerDecision(
+                intent="enterprise knowledge request",
+                requires_retrieval=True,
+                requires_safety_review=True,
+                execution_steps=[
+                    "retrieve_documents",
+                    "generate_grounded_answer",
+                    "validate_safety",
+                    "generate_response",
+                ],
+            )
 
     def _extract_json(
         self,

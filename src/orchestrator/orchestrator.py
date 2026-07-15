@@ -133,6 +133,13 @@ class Orchestrator:
         Execute KnowledgeAgent only when required.
         """
 
+        if not state.planner_decision:
+            logger.warning("No planner decision. " "Running default knowledge workflow.")
+
+        elif not state.planner_decision.requires_retrieval:
+            logger.info("Knowledge skipped | retrieval not required")
+            return
+
         plan = state.planner_decision
 
         if not plan:

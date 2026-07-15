@@ -1,6 +1,5 @@
 # Company VPN Setup Guide
 
-
 ## Requirements
 
 Employees need:
