@@ -40,10 +40,7 @@ class BaseAgent:
 
         self.system_prompt = self._load_prompt(prompt_file)
 
-        logger.info(
-            "Initialized agent: %s",
-            self.name,
-        )
+        logger.info(f"Initialized agent: {self.name}")
 
     def _load_prompt(
         self,
@@ -79,10 +76,7 @@ class BaseAgent:
             Generated response text.
         """
 
-        logger.info(
-            "%s processing request",
-            self.name,
-        )
+        logger.info(f"{self.name} processing request")
 
         prompt_parts = []
 
@@ -114,9 +108,9 @@ class BaseAgent:
                 model=self.settings.azure_openai_chat_deployment,
                 input=final_prompt,
             )
-        except PermissionDeniedError as e:
-            print("Status:", e.status_code)
-            print("Body:", e.response.text)
+
+        except PermissionDeniedError:
+            logger.exception(f"{self.name} failed due to permission error")
             raise
 
         return response.output_text

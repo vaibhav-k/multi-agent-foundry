@@ -27,15 +27,9 @@ Multi-Agent Foundry is a production-oriented framework for building intelligent 
 
 Instead of relying on a single LLM to handle every responsibility, the system separates tasks into specialized components.
 
-Core responsibilities are distributed across agents:
+The framework separates reasoning, knowledge retrieval, validation, and response generation into independent components.
 
-* Planning user requests
-* Retrieving enterprise knowledge
-* Performing Retrieval-Augmented Generation (RAG)
-* Enforcing safety policies
-* Generating final responses
-
-The architecture follows separation of concerns, allowing each subsystem to be independently developed, tested, evaluated, and extended.
+The architecture enables modular development, testing, evaluation, and extension of enterprise AI assistants. It follows separation of concerns, allowing each subsystem to be independently developed, tested, evaluated, and extended.
 
 ---
 
@@ -82,7 +76,7 @@ Capabilities include:
 * Citation deduplication
 * Retrieval evaluation
 
-The Knowledge Agent owns the complete RAG workflow:
+The Knowledge Agent orchestrates the RAG pipeline:
 
 ```text
               User Query
@@ -140,9 +134,15 @@ The application exposes functionality through REST APIs.
 Supported capabilities include:
 
 * Chat interactions
-* Knowledge retrieval
 * Health checks
-* Evaluation execution
+* Agent workflow execution
+
+Available endpoints:
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /health` | Application health check |
+| `POST /chat` | Execute the multi-agent assistant workflow |
 
 ---
 
@@ -172,43 +172,7 @@ The project includes automated evaluation pipelines for:
 
 ## Testing
 
-The repository includes:
-
-* Unit tests
-* Integration tests
-* RAG pipeline tests
-* Safety tests
-* Agent workflow tests
-
-Run all tests:
-
-```bash
-pytest
-```
-
-Run unit tests:
-
-```bash
-pytest tests/unit
-```
-
-Run integration tests:
-
-```bash
-pytest tests/integration
-```
-
-Current test coverage includes:
-
-* Planner Agent behavior
-* Knowledge Agent workflows
-* Safety validation
-* Response Agent generation
-* Citation generation
-* RAG retrieval pipeline
-* Orchestrator execution
-
----
+The project includes automated validation through unit and integration test suites.
 
 # 3. High-Level Architecture
 
@@ -250,37 +214,6 @@ Current test coverage includes:
                   │
                   ▼
              Final Answer
-```
-
-## Workflow
-
-```text
-              User Request
-
-              |
-              v
-
-              Planner Agent
-
-              |
-              v
-
-              Knowledge Agent
-
-              |
-              v
-
-              Safety Agent
-
-              |
-              v
-
-              Response Agent
-
-              |
-              v
-
-              Final Response
 ```
 
 ---
@@ -646,7 +579,7 @@ Orchestrator
 
 ---
 
-## Recommended Development Process
+## Recommended development process:
 
 1. Add or modify functionality.
 2. Add unit tests.

@@ -23,7 +23,7 @@ Citation Builder
 Grounded Answer
 """
 
-from typing import Optional, List, Dict
+from typing import List, Optional
 
 from src.agents.base import BaseAgent
 from src.config import get_logger
@@ -93,7 +93,7 @@ class KnowledgeAgent(BaseAgent):
 
         logger.info("KnowledgeAgent processing request")
 
-        documents: List[Dict] = []
+        documents: List[RAGDocument] = []
 
         if context:
 
@@ -107,17 +107,19 @@ class KnowledgeAgent(BaseAgent):
 
             logger.debug(f"Rewritten search query: {search_query}")
 
-            retrieved_documents = self.retriever.retrieve(search_query)
+            documents = self.retriever.retrieve(search_query)
 
-            logger.info(f"Retrieved {len(retrieved_documents)} documents")
+            logger.info(f"Retrieved {len(documents)} documents")
 
-            documents = retrieved_documents
+            documents = self.reranker.rerank(query=search_query, documents=documents)
+
+            logger.info(f"Reranked documents: {len(documents)}")
 
             final_context = self.rag.build_context(documents)
 
         answer = self.generate(
-            user_input=user_input,
-            context=final_context,
+            user_input,
+            final_context,
         )
 
         citations = self.citation_builder.build(documents)
@@ -126,7 +128,7 @@ class KnowledgeAgent(BaseAgent):
             answer=answer,
             citations=citations,
             grounded=bool(documents),
-            confidence=(self.calculate_confidence(documents)),
+            confidence=self.calculate_confidence(documents),
         )
 
     def generate(
@@ -135,7 +137,7 @@ class KnowledgeAgent(BaseAgent):
         context: str,
     ) -> str:
         """
-        Generate grounded response.
+        Generate a grounded response.
         """
 
         prompt = f"""
@@ -168,7 +170,7 @@ Answer:
 
     def calculate_confidence(
         self,
-        documents: list,
+        documents: list[RAGDocument],
     ) -> float:
         """
         Calculate normalized confidence from retrieval scores.

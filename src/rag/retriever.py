@@ -78,22 +78,16 @@ class RAGRetriever:
             List of RAGDocument objects.
         """
 
-        logger.info(
-            "Retrieving documents for query: %s",
-            query,
-        )
+        logger.info(f"Retrieving documents for query: {query}")
 
         documents = self.search.search(
-            query=query,
-            top_k=top_k,
+            query,
+            top_k,
         )
 
         filtered_documents = [document for document in documents if document.content]
 
-        logger.info(
-            "Retrieved %s valid documents",
-            len(filtered_documents),
-        )
+        logger.info(f"Retrieved {len(filtered_documents)} valid documents")
 
         return filtered_documents
 
