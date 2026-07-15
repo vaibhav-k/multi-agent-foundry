@@ -43,7 +43,7 @@ The architecture follows separation of concerns, allowing each subsystem to be i
 
 ## Multi-Agent Architecture
 
-The application uses specialized AI agents instead of a single monolithic workflow.
+The application uses specialized AI agents instead of a single monolithic workflow. Each agent has a focused responsibility within the overall execution pipeline.
 
 Included agents:
 
@@ -52,7 +52,16 @@ Included agents:
 * Safety Agent
 * Response Agent
 
-Each agent has a focused responsibility within the overall workflow.
+Agent responsibilities:
+
+| Agent | Responsibility |
+|-------|---------------|
+| Planner Agent | Analyzes user requests and determines execution workflow. |
+| Knowledge Agent | Performs enterprise knowledge retrieval, RAG processing, answer generation, and citation creation. |
+| Safety Agent | Validates generated responses against safety and grounding policies. |
+| Response Agent | Produces the final user-facing response after validation. |
+
+The agents communicate through shared workflow state managed by the orchestrator.
 
 ---
 
@@ -68,8 +77,46 @@ Capabilities include:
 * Vector indexing
 * Semantic retrieval
 * Result re-ranking
+* Grounded answer generation
 * Citation generation
+* Citation deduplication
 * Retrieval evaluation
+
+The Knowledge Agent owns the complete RAG workflow:
+
+```text
+              User Query
+
+              |
+              v
+
+              Query Rewrite
+
+              |
+              v
+
+              Document Retrieval
+
+              |
+              v
+
+              Document Re-ranking
+
+              |
+              v
+
+              Context Construction
+
+              |
+              v
+
+              Grounded Answer Generation
+
+              |
+              v
+
+              Citation Builder
+```
 
 ---
 
@@ -131,6 +178,35 @@ The repository includes:
 * Integration tests
 * RAG pipeline tests
 * Safety tests
+* Agent workflow tests
+
+Run all tests:
+
+```bash
+pytest
+```
+
+Run unit tests:
+
+```bash
+pytest tests/unit
+```
+
+Run integration tests:
+
+```bash
+pytest tests/integration
+```
+
+Current test coverage includes:
+
+* Planner Agent behavior
+* Knowledge Agent workflows
+* Safety validation
+* Response Agent generation
+* Citation generation
+* RAG retrieval pipeline
+* Orchestrator execution
 
 ---
 
@@ -164,10 +240,47 @@ The repository includes:
           Retrieved Context
                   │
                   ▼
+           Generated Answer
+                  │
+                  ▼
+           Safety Validation
+                  │
+                  ▼
            Response Agent
                   │
                   ▼
              Final Answer
+```
+
+## Workflow
+
+```text
+              User Request
+
+              |
+              v
+
+              Planner Agent
+
+              |
+              v
+
+              Knowledge Agent
+
+              |
+              v
+
+              Safety Agent
+
+              |
+              v
+
+              Response Agent
+
+              |
+              v
+
+              Final Response
 ```
 
 ---
@@ -220,24 +333,147 @@ The repository includes:
 multi-agent-foundry/
 │
 ├── src/
+│   │
 │   ├── agents/
+│   │   ├── base.py
+│   │   ├── planner.py
+│   │   ├── knowledge.py
+│   │   ├── safety.py
+│   │   ├── response.py
+│   │   └── __init__.py
+│   │
 │   ├── api/
+│   │   ├── app.py
+│   │   ├── dependencies.py
+│   │   ├── routes.py
+│   │   └── schemas.py
+│   │
 │   ├── config/
+│   │   ├── client.py
+│   │   ├── logger.py
+│   │   ├── logging.py
+│   │   ├── settings.py
+│   │   └── __init__.py
+│   │
 │   ├── evaluation/
+│   │   ├── dataset.py
+│   │   ├── evaluator.py
+│   │   ├── metrics.py
+│   │   ├── models.py
+│   │   ├── reports.py
+│   │   └── samples/
+│   │       ├── adversarial_questions.json
+│   │       ├── rag_questions.json
+│   │       └── security_questions.json
+│   │
 │   ├── memory/
+│   │   ├── base.py
+│   │   ├── conversation.py
+│   │   └── store.py
+│   │
 │   ├── orchestrator/
+│   │   ├── orchestrator.py
+│   │   ├── router.py
+│   │   ├── state.py
+│   │   └── __init__.py
+│   │
 │   ├── prompts/
+│   │   ├── system.txt
+│   │   ├── planner.txt
+│   │   ├── knowledge.txt
+│   │   ├── safety.txt
+│   │   ├── rag_answer.txt
+│   │   ├── query_rewrite.txt
+│   │   ├── citation.txt
+│   │   └── __init__.py
+│   │
 │   ├── rag/
+│   │   ├── chunker.py
+│   │   ├── documents.py
+│   │   ├── embeddings.py
+│   │   ├── evaluation.py
+│   │   ├── index.py
+│   │   ├── ingestion.py
+│   │   ├── loader.py
+│   │   ├── models.py
+│   │   ├── pipeline.py
+│   │   ├── query.py
+│   │   ├── reranker.py
+│   │   ├── retriever.py
+│   │   ├── search.py
+│   │   ├── validators.py
+│   │   ├── citations.py
+│   │   └── sample_docs/
+│   │       ├── access_management.md
+│   │       ├── email_setup.md
+│   │       ├── incident_reporting.md
+│   │       ├── mfa_setup.md
+│   │       ├── password_policy.md
+│   │       ├── software_installation.md
+│   │       └── vpn.md
+│   │
 │   ├── state/
-│   └── utils/
+│   │   └── models.py
+│   │
+│   ├── utils/
+│   │   └── formatter.py
+│   │
+│   ├── bootstrap.py
+│   ├── main.py
+│   ├── models.py
+│   └── __init__.py
 │
 ├── tests/
-├── scripts/
+│   │
+│   ├── unit/
+│   │   ├── test_chunker.py
+│   │   ├── test_citations.py
+│   │   ├── test_memory.py
+│   │   ├── test_models.py
+│   │   ├── test_orchestrator.py
+│   │   ├── test_prompts.py
+│   │   ├── test_query.py
+│   │   ├── test_rag.py
+│   │   ├── test_response_agent.py
+│   │   ├── test_reranker.py
+│   │   └── test_state.py
+│   │
+│   ├── integration/
+│   │   ├── test_azure_connection.py
+│   │   ├── test_content_safety.py
+│   │   ├── test_rag_pipeline.py
+│   │   ├── test_rag_quality.py
+│   │   └── test_search.py
+│   │
+│   └── conftest.py
+│
 ├── docs/
-├── README.md
-├── requirements.txt
+│   ├── architecture/
+│   │   ├── system-architecture.md
+│   │   ├── agent-flow.md
+│   │   └── rag-pipeline.md
+│   │
+│   ├── agents.md
+│   ├── api.md
+│   ├── config.md
+│   ├── evaluation.md
+│   ├── memory.md
+│   ├── orchestrator.md
+│   ├── prompts.md
+│   ├── rag.md
+│   └── state-and-utils.md
+│
+├── scripts/
+│   └── evaluate.py
+│
+├── .env
+├── .env.example
+├── .gitignore
+├── pyproject.toml
 ├── pytest.ini
-└── .env
+├── requirements.txt
+├── README.md
+└── LICENSE
 ```
 
 ---

@@ -6,6 +6,7 @@ Coordinates:
 - Planner Agent
 - Knowledge Agent
 - Safety Agent
+- ResponseAgent
 
 using shared AgentState.
 """
@@ -18,6 +19,7 @@ from src.agents import (
     KnowledgeAgent,
     PlannerAgent,
     SafetyAgent,
+    ResponseAgent,
 )
 from src.config import get_logger
 from src.models import AgentWorkflowResult
@@ -48,6 +50,9 @@ class Orchestrator:
         Safety Agent
               |
               v
+        Response Agent
+              |
+              v
         Final Response
     """
 
@@ -57,11 +62,13 @@ class Orchestrator:
         knowledge_agent: KnowledgeAgent | None = None,
         safety_agent: SafetyAgent | None = None,
         state_manager: StateManager | None = None,
+        response_agent: ResponseAgent | None = None,
     ):
         self.planner = planner
-        self.knowledge_agent = knowledge_agent if knowledge_agent else KnowledgeAgent()
-        self.safety_agent = safety_agent if safety_agent else SafetyAgent()
-        self.state_manager = state_manager if state_manager else StateManager()
+        self.knowledge_agent = knowledge_agent or KnowledgeAgent()
+        self.safety_agent = safety_agent or SafetyAgent()
+        self.state_manager = state_manager or StateManager()
+        self.response_agent = response_agent or ResponseAgent()
 
         logger.info("Multi-agent orchestrator initialized")
 
@@ -95,7 +102,7 @@ class Orchestrator:
 
         self._run_safety(state)
 
-        self._build_response(state)
+        self._run_response(state)
 
         elapsed = time.perf_counter() - workflow_start
 
@@ -174,24 +181,30 @@ class Orchestrator:
             time.perf_counter() - start,
         )
 
-    def _build_response(
+    def _run_response(
         self,
         state: AgentState,
     ) -> None:
         """
-        Construct final workflow response.
+        Execute ResponseAgent.
         """
 
-        if state.safety_passed:
-            state.final_answer = state.knowledge_response
+        start = time.perf_counter()
 
-            state.response = state.knowledge_response.answer
-
-            return
-
-        state.response = (
-            "The request could not be completed " "because it did not pass safety validation."
+        state.final_answer = self.response_agent.generate(
+            state.planner_decision,
+            state.knowledge_response,
+            state.safety_result,
         )
+
+        if state.final_answer:
+            state.response = state.final_answer.answer
+        else:
+            state.response = (
+                "The request could not be completed because it did not pass safety validation."
+            )
+
+        logger.info(f"Response completed | duration={time.perf_counter() - start}s")
 
     def to_workflow_result(
         self,

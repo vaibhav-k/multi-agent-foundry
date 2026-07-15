@@ -23,17 +23,25 @@ class CitationBuilder:
     ) -> list[DocumentReference]:
 
         citations = []
+        seen_sources = set()
 
         for document in documents:
 
             if isinstance(document, dict):
 
+                name = document.get(
+                    "source",
+                    "unknown",
+                )
+
+                if name in seen_sources:
+                    continue
+
+                seen_sources.add(name)
+
                 citations.append(
                     DocumentReference(
-                        name=document.get(
-                            "source",
-                            "unknown",
-                        ),
+                        name=name,
                         section=document.get("section"),
                         score=document.get("score"),
                     )
@@ -44,17 +52,23 @@ class CitationBuilder:
             section = None
 
             if document.metadata:
-
                 section = getattr(
                     document.metadata,
                     "section",
                     None,
                 )
 
+            name = document.source or document.title or "unknown"
+
+            if name in seen_sources:
+                continue
+
+            seen_sources.add(name)
+
             citations.append(
                 DocumentReference(
                     document_id=document.document_id,
-                    name=(document.source or document.title or "unknown"),
+                    name=name,
                     section=section,
                     score=document.score,
                 )
